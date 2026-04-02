@@ -1,0 +1,17 @@
+[project]
+name = "loopia-cli"
+version = "0.1.0"
+description = "CLI for managing DNS records via Loopia API"
+requires-python = ">=3.11"
+dependencies = ["typer>=0.9"]
+
+[project.scripts]
+loopia = "loopia.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["loopia*"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
