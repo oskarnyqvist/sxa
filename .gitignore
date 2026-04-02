@@ -1,0 +1,22 @@
+secrets/age-key.txt
+.env
+*.sops.env.dec
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db

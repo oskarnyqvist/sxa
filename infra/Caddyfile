@@ -1,0 +1,4 @@
+sxa.se {
+    root * /srv/www
+    file_server
+}
