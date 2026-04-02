@@ -17,4 +17,6 @@ Varje idé har en egen fil — sammanfattning och länk nedan.
 
 - **[Kortspel](kortspel.md)** — Freecell som första spel, byggt på en återanvändbar kortmotor för fler kortspel.
 
+- **[White-Collar Workwear](workwear.md)** — Uniformer för kontorsarbetare. Köp 5 likadana skjortor, slipp tänka. POC först, produktion sen.
+
 ---
