@@ -1,6 +1,15 @@
 # Projektidéer
 
 Idéer som inte ännu kvalificerar till ett eget projekt under `projects/`.
+Större idéer har egna filer — länkade nedan.
+
+---
+
+## YourTake — Datavisualisering med perspektiv
+
+Verktyg för att skapa annoterade datagrafer och animerade videos för sociala medier. Obligatoriskt "take"-block gör varje graf till ett argument. SCB som första datakälla.
+
+→ Fullständig spec: [ideas-yourtake.md](ideas-yourtake.md)
 
 ---
 
