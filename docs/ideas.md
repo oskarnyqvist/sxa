@@ -13,4 +13,6 @@ Varje idé har en egen fil — sammanfattning och länk nedan.
 
 - **[Prylkoll](ideas-prylar.md)** — Inventarie- och underhållsverktyg för prylar, fordon och byggnader. Arbetslogg, serviceintervall, manualer.
 
+- **[Me2Me](ideas-me2me.md)** — Personlig kommunikationshub. Chat som UI för allt — dina tjänster, enheter och tredjeparts-appar ansluter som kanaler.
+
 ---
