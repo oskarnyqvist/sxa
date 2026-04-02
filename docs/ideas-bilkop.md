@@ -18,6 +18,10 @@ Ett personligt projektverktyg för den som ska köpa begagnad bil. Inte en markn
 - Ingen prisvärderings-tjänst
 - Ingen inloggning krävs — datan lever lokalt eller i en enkel session
 
+## Framtida varianter
+
+Konceptet kan generaliseras till andra stora köpprocesser — hus, båt, husvagn etc. Hus har mer komplexitet (budgivning, besiktning, lån) men samma grundbehov: hantera flera kandidater, checklistor, jämförelser. Bygga som en generell "köpprocess-motor" snarare än bil-specifikt?
+
 ## Att utforska
 
 - Auto-hämta data från Blocket/Bytbil-länk? (scraping eller bookmarklet)

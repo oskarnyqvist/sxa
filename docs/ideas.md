@@ -11,4 +11,6 @@ Varje idé har en egen fil — sammanfattning och länk nedan.
 
 - **[Bilköp](ideas-bilkop.md)** — Sidekick-verktyg för att hantera processen att köpa begagnad bil. Kanban, checklistor, jämförelser.
 
+- **[Prylkoll](ideas-prylar.md)** — Inventarie- och underhållsverktyg för prylar, fordon och byggnader. Arbetslogg, serviceintervall, manualer.
+
 ---
