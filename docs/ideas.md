@@ -15,4 +15,6 @@ Varje idé har en egen fil — sammanfattning och länk nedan.
 
 - **[Me2Me](ideas-me2me.md)** — Personlig kommunikationshub. Chat som UI för allt — dina tjänster, enheter och tredjeparts-appar ansluter som kanaler.
 
+- **[Kortspel](ideas-kortspel.md)** — Freecell som första spel, byggt på en återanvändbar kortmotor för fler kortspel.
+
 ---
