@@ -1,32 +1,14 @@
 # Projektidéer
 
 Idéer som inte ännu kvalificerar till ett eget projekt under `projects/`.
-Större idéer har egna filer — länkade nedan.
+Varje idé har en egen fil — sammanfattning och länk nedan.
 
 ---
 
-## YourTake — Datavisualisering med perspektiv
+- **[YourTake](ideas-yourtake.md)** — Datavisualisering med obligatoriskt perspektiv. Animerade grafer för sociala medier, SCB som första datakälla.
 
-Verktyg för att skapa annoterade datagrafer och animerade videos för sociala medier. Obligatoriskt "take"-block gör varje graf till ett argument. SCB som första datakälla.
+- **[Jones in the Fast Lane](ideas-jones.md)** — Konfigurerbar spelmotor inspirerad av Jones in the Fast Lane. Webbaserad, config-driven.
 
-→ Fullständig spec: [ideas-yourtake.md](ideas-yourtake.md)
-
----
-
-## Jones in the Fast Lane / Motor-spel
-
-Inspirerat av "Jones in the Fast Lane" — ett livssimulerings/brädspelsliknande spel där man kör runt, jobbar, handlar, utbildar sig etc.
-
-**Grundidé:**
-- Webbaserad version av Jones in the Fast Lane-konceptet
-- Konfigurerbar spelmotor — inte bara ett spel utan en plattform
-- Via konfiguration (JSON/YAML?) kan man skapa helt andra spel med samma motor
-- Olika teman, platser, mål, resurser — allt styrt av config
-
-**Att utforska:**
-- Vilken tech? Canvas, SVG, eller DOM-baserat?
-- Multiplayer eller single-player först?
-- Hur ser en bra config-struktur ut för att definiera ett "spel"?
-- Editor för att bygga egna spel-configs?
+- **[Bilköp](ideas-bilkop.md)** — Sidekick-verktyg för att hantera processen att köpa begagnad bil. Kanban, checklistor, jämförelser.
 
 ---
