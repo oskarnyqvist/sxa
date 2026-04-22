@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Game0</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #1e1e2e; }
+        body { display: flex; flex-direction: column; }
+        header {
+            flex: 0 0 auto;
+            padding: 12px 24px;
+            background: #11111b;
+            border-bottom: 1px solid #313244;
+            font: 500 17px system-ui, sans-serif;
+        }
+        header a { color: #89b4fa; text-decoration: none; }
+        header a:hover { text-decoration: underline; }
+        #game { flex: 1 1 auto; min-height: 0; }
+        #game canvas { display: block; }
+    </style>
+  <script type="module" crossorigin src="/assets/index-BxF2CP89.js"></script>
+</head>
+<body>
+    <header><a href="https://sxa.se">sxa.se</a></header>
+    <div id="game"></div>
+</body>
+</html>

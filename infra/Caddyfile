@@ -2,3 +2,8 @@ sxa.se {
     root * /srv/www
     file_server
 }
+
+game0.sxa.se {
+    root * /srv/www/game0
+    file_server
+}
