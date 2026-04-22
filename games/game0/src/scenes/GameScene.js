@@ -19,6 +19,9 @@ const WORLD_HEIGHT = 5000;
 const MIN_ZOOM = 0.2;
 const MAX_ZOOM = 2;
 const ZOOM_STEP = 0.1;
+const DEADZONE_FRAC = 0.6;
+const FOLLOW_LERP = 0.1;
+const DRAG_THRESHOLD = 4;
 
 export default class GameScene extends Phaser.Scene {
     constructor() {
@@ -56,8 +59,8 @@ export default class GameScene extends Phaser.Scene {
         this.player.body.setCollideWorldBounds(true);
         this.player.body.setVelocity(start.pvx, start.pvy);
 
-        this.cameras.main.startFollow(this.player);
         this.cameras.main.setZoom(start.zoom);
+        this.enableFollow();
 
         this.points = start.points.map(p => ({ x: p.x, y: p.y }));
         this.markers = this.points.map(p =>
@@ -65,12 +68,46 @@ export default class GameScene extends Phaser.Scene {
         );
         this.nextIndex = 0;
 
+        this.dragStart = null;
+        this.dragged = false;
+
         this.input.on('pointerdown', (pointer) => {
-            const p = this.points[this.nextIndex];
-            p.x = pointer.worldX;
-            p.y = pointer.worldY;
-            this.markers[this.nextIndex].setPosition(pointer.worldX, pointer.worldY);
-            this.nextIndex = (this.nextIndex + 1) % NUM_POINTS;
+            this.dragStart = {
+                x: pointer.x,
+                y: pointer.y,
+                scrollX: this.cameras.main.scrollX,
+                scrollY: this.cameras.main.scrollY,
+            };
+            this.dragged = false;
+        });
+
+        this.input.on('pointermove', (pointer) => {
+            if (!this.dragStart || !pointer.isDown) return;
+            const dx = pointer.x - this.dragStart.x;
+            const dy = pointer.y - this.dragStart.y;
+            if (!this.dragged && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+                this.dragged = true;
+                this.cameras.main.stopFollow();
+            }
+            if (this.dragged) {
+                const zoom = this.cameras.main.zoom;
+                this.cameras.main.scrollX = this.dragStart.scrollX - dx / zoom;
+                this.cameras.main.scrollY = this.dragStart.scrollY - dy / zoom;
+            }
+        });
+
+        this.input.on('pointerup', (pointer) => {
+            if (!this.dragStart) return;
+            if (this.dragged) {
+                this.enableFollow();
+            } else {
+                const p = this.points[this.nextIndex];
+                p.x = pointer.worldX;
+                p.y = pointer.worldY;
+                this.markers[this.nextIndex].setPosition(pointer.worldX, pointer.worldY);
+                this.nextIndex = (this.nextIndex + 1) % NUM_POINTS;
+            }
+            this.dragStart = null;
         });
 
         this.input.on('wheel', (_pointer, _over, _dx, dy) => {
@@ -122,6 +159,12 @@ export default class GameScene extends Phaser.Scene {
             this.trailGraphics.lineTo(this.trail[i].x, this.trail[i].y);
         }
         this.trailGraphics.strokePath();
+    }
+
+    enableFollow() {
+        const cam = this.cameras.main;
+        cam.startFollow(this.player, false, FOLLOW_LERP, FOLLOW_LERP);
+        cam.setDeadzone(cam.width * DEADZONE_FRAC, cam.height * DEADZONE_FRAC);
     }
 
     serializeState() {
