@@ -17,4 +17,19 @@ const config = {
     scene: [GameScene]
 };
 
-new Phaser.Game(config);
+const game = new Phaser.Game(config);
+
+document.getElementById('share').addEventListener('click', async (e) => {
+    const scene = game.scene.getScene('game');
+    if (!scene) return;
+    const url = new URL(window.location.href);
+    url.searchParams.set('s', scene.serializeState());
+    await navigator.clipboard.writeText(url.toString());
+    window.history.replaceState(null, '', url);
+    e.target.classList.add('copied');
+    e.target.textContent = 'Kopierad!';
+    setTimeout(() => {
+        e.target.classList.remove('copied');
+        e.target.textContent = 'Dela';
+    }, 1200);
+});
