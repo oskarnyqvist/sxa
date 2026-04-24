@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stars & Comets — Lab</title>
+  </head>
+  <body>
+    <div id="toolbar">
+      <span class="title">Stars & Comets</span>
+      <button data-mode="select"   class="active">Markera</button>
+      <button data-mode="addStar"  >+ Star</button>
+      <button data-mode="addComet" >+ Comet</button>
+      <button data-mode="edit"     >Redigera</button>
+      <label class="speed">
+        Hastighet <span id="speed-value">1.00x</span>
+        <input id="speed-slider" type="range" min="0" max="2" step="0.05" value="1" />
+      </label>
+    </div>
+    <div id="main">
+      <canvas id="canvas"></canvas>
+      <aside id="panel">
+        <h3>Värld</h3>
+        <div id="world-panel"></div>
+        <h3>Objekt</h3>
+        <div id="body-panel"><p class="empty">Inget markerat</p></div>
+      </aside>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
+</html>

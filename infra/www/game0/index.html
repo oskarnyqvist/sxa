@@ -13,16 +13,34 @@
             background: #11111b;
             border-bottom: 1px solid #313244;
             font: 500 17px system-ui, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
         header a { color: #89b4fa; text-decoration: none; }
         header a:hover { text-decoration: underline; }
+        #share {
+            background: #313244;
+            color: #cdd6f4;
+            border: 1px solid #45475a;
+            border-radius: 6px;
+            padding: 6px 14px;
+            font: 500 14px system-ui, sans-serif;
+            cursor: pointer;
+        }
+        #share:hover { background: #45475a; }
+        #share.copied { background: #4ade80; color: #11111b; border-color: #4ade80; }
         #game { flex: 1 1 auto; min-height: 0; }
         #game canvas { display: block; }
     </style>
-  <script type="module" crossorigin src="/assets/index-BxF2CP89.js"></script>
+  <script type="module" crossorigin src="/assets/index-Dhomfubp.js"></script>
 </head>
 <body>
-    <header><a href="https://sxa.se">sxa.se</a></header>
+    <header>
+        <a href="https://sxa.se">sxa.se</a>
+        <button id="share">Dela</button>
+    </header>
     <div id="game"></div>
 </body>
 </html>
