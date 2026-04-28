@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Admin CLI for the sxa-data service. Forwards subcommands to
+# `python manage.py game ...` running inside the data container on the server.
+#
+# Examples:
+#   sxa-data list
+#   sxa-data create starsandcomets --name "Stars & Comets" --url https://starsandcomets.sxa.se
+#   sxa-data update starsandcomets --max-levels 500
+#   sxa-data deactivate game0
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$REPO_ROOT/secrets/age-key.txt}"
+SERVER_IP="$(sops -d "$REPO_ROOT/secrets/hetzner.sops.env" | awk -F'"' '/^HETZNER_IP=/ {print $2}')"
+
+usage() {
+    cat <<'USAGE'
+Usage: sxa-data <subcommand> [args...]
+
+Subcommands:
+  list
+  create <slug> --name "..." [--description "..."] [--url URL] [--max-levels N]
+  update <slug> [--name "..."] [--description "..."] [--url URL] [--max-levels N]
+  activate <slug>
+  deactivate <slug>
+USAGE
+}
+
+if [ $# -eq 0 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage; exit 0
+fi
+
+# Quote each argument so it survives the trip through ssh -> docker compose exec.
+QUOTED=""
+for a in "$@"; do
+    QUOTED+="$(printf '%q ' "$a")"
+done
+
+ssh "root@$SERVER_IP" \
+    "cd /root/sxa/services/data && docker compose exec -T data python manage.py game $QUOTED"
