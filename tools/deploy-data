@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+SERVICE_DIR="$REPO_ROOT/services/data"
+REMOTE_DIR="/root/sxa/services/data"
+
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$REPO_ROOT/secrets/age-key.txt}"
+SERVER_IP="$(sops -d "$REPO_ROOT/secrets/hetzner.sops.env" | awk -F'"' '/^HETZNER_IP=/ {print $2}')"
+
+if [ ! -f "$REPO_ROOT/secrets/data.sops.env" ]; then
+    echo "✗ Missing secrets/data.sops.env"
+    echo "  Create it from services/data/.env.example, then encrypt with:"
+    echo "    sops -e secrets/data.env > secrets/data.sops.env"
+    exit 1
+fi
+
+echo "→ Syncing services/data/ to $SERVER_IP"
+ssh "root@$SERVER_IP" "mkdir -p $REMOTE_DIR"
+rsync -avz --delete \
+    --exclude '.env' --exclude '__pycache__' --exclude 'staticfiles' --exclude '.venv' --exclude 'db.sqlite3' \
+    "$SERVICE_DIR/" "root@$SERVER_IP:$REMOTE_DIR/"
+
+echo "→ Decrypting and installing .env"
+sops -d "$REPO_ROOT/secrets/data.sops.env" | ssh "root@$SERVER_IP" "cat > $REMOTE_DIR/.env && chmod 600 $REMOTE_DIR/.env"
+
+echo "→ Updating Caddyfile"
+scp "$REPO_ROOT/infra/Caddyfile" "root@$SERVER_IP:/root/sxa/infra/Caddyfile"
+
+echo "→ Build + (re)start"
+ssh "root@$SERVER_IP" "cd $REMOTE_DIR && docker compose up -d --build"
+ssh "root@$SERVER_IP" "cd /root/sxa/infra && docker compose exec -T caddy caddy reload --config /etc/caddy/Caddyfile"
+
+echo "✓ Deployed: https://data.sxa.se"
+echo "  Health:   curl https://data.sxa.se/api/health/"

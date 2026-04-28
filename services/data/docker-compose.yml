@@ -1,0 +1,29 @@
+services:
+  data:
+    build: .
+    image: sxa-data:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - web
+      - internal
+    depends_on:
+      - postgres-wait
+    expose:
+      - "8000"
+
+  # Tiny init container that blocks until postgres responds.
+  postgres-wait:
+    image: busybox:1.37
+    command: sh -c 'until nc -z postgres 5432; do sleep 1; done'
+    networks:
+      - internal
+
+networks:
+  web:
+    external: true
+    name: infra_web
+  internal:
+    external: true
+    name: infra_internal

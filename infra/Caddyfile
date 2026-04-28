@@ -7,3 +7,7 @@ game0.sxa.se {
     root * /srv/www/game0
     file_server
 }
+
+data.sxa.se {
+    reverse_proxy data:8000
+}
