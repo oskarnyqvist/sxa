@@ -5,6 +5,9 @@ secrets/age-key.txt
 # Database dumps (pulled by tools/dump-data)
 dumps/
 
+# Fixtures pulled from prod (contain user data / password hashes)
+services/data/fixtures/
+
 # Python
 __pycache__/
 *.pyc

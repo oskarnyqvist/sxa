@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Seed the local SQLite from prod: pulls auth.User + levels.Game + levels.Level
+# as a Django fixture and loads it into services/data/db.sqlite3.
+#
+# After seeding, log in locally either with the prod admin password,
+# or reset:  cd services/data && DJANGO_DB=sqlite .venv/bin/python manage.py changepassword admin
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+DATA_DIR="$REPO_ROOT/services/data"
+
+VENV_PY="$DATA_DIR/.venv/bin/python"
+if [ ! -x "$VENV_PY" ]; then
+    echo "✗ Local venv missing at $DATA_DIR/.venv"
+    echo "  Set it up first:"
+    echo "    cd services/data && python -m venv .venv && .venv/bin/pip install -r requirements.txt"
+    exit 1
+fi
+
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$REPO_ROOT/secrets/age-key.txt}"
+SERVER_IP="$(sops -d "$REPO_ROOT/secrets/hetzner.sops.env" | awk -F'"' '/^HETZNER_IP=/ {print $2}')"
+
+FIXTURE_DIR="$DATA_DIR/fixtures"
+FIXTURE="$FIXTURE_DIR/prod-seed.json"
+mkdir -p "$FIXTURE_DIR"
+
+echo "→ Dumping fixture on prod (auth.User + levels.Game + levels.Level)"
+ssh "root@$SERVER_IP" \
+    "cd /root/sxa/services/data && docker compose exec -T data python manage.py dumpdata --indent=2 --natural-foreign --natural-primary auth.User levels.Game levels.Level" \
+    > "$FIXTURE"
+
+echo "→ Wrote $(wc -c < "$FIXTURE") bytes to $FIXTURE"
+
+cd "$DATA_DIR"
+
+echo "→ Migrating local SQLite (idempotent)"
+DJANGO_DB=sqlite DJANGO_DEBUG=1 "$VENV_PY" manage.py migrate --noinput >/dev/null
+
+echo "→ Loading fixture into local SQLite"
+DJANGO_DB=sqlite DJANGO_DEBUG=1 "$VENV_PY" manage.py loaddata "$FIXTURE"
+
+echo ""
+echo "Local DB now contains:"
+DJANGO_DB=sqlite DJANGO_DEBUG=1 "$VENV_PY" manage.py shell -c "
+from django.contrib.auth import get_user_model
+from levels.models import Game, Level
+print(f'  users:  {get_user_model().objects.count()}')
+print(f'  games:  {Game.objects.count()}  ({list(Game.objects.values_list(\"slug\", flat=True))})')
+print(f'  levels: {Level.objects.count()}')
+"
+
+echo ""
+echo "Tip: login locally uses the prod admin password (hashes copied as-is)."
+echo "To reset:  DJANGO_DB=sqlite $VENV_PY manage.py changepassword admin"
