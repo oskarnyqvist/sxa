@@ -2,6 +2,9 @@ secrets/age-key.txt
 .env
 *.sops.env.dec
 
+# Database dumps (pulled by tools/dump-data)
+dumps/
+
 # Python
 __pycache__/
 *.pyc

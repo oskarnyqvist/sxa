@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Pull a Postgres dump from the server to local ./dumps/.
+#
+# Usage:
+#   dump-data                # dumps the sxa_data database
+#   dump-data <db-name>      # dumps a specific database
+#   dump-data --all          # dumps every database (pg_dumpall)
+#
+# Format: pg_dump custom (-Fc), already compressed. Restore with pg_restore.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+DUMPS="$REPO_ROOT/dumps"
+TS="$(date +%Y%m%d-%H%M%S)"
+mkdir -p "$DUMPS"
+
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$REPO_ROOT/secrets/age-key.txt}"
+SERVER_IP="$(sops -d "$REPO_ROOT/secrets/hetzner.sops.env" | awk -F'"' '/^HETZNER_IP=/ {print $2}')"
+
+if [ "${1:-}" = "--all" ]; then
+    OUT="$DUMPS/all-${TS}.sql.gz"
+    echo "→ Dumping ALL databases from $SERVER_IP"
+    ssh "root@$SERVER_IP" \
+        "cd /root/sxa/infra && docker compose exec -T postgres pg_dumpall -U postgres" \
+        | gzip > "$OUT"
+else
+    DB="${1:-sxa_data}"
+    OUT="$DUMPS/${DB}-${TS}.dump"
+    echo "→ Dumping database '$DB' from $SERVER_IP"
+    ssh "root@$SERVER_IP" \
+        "cd /root/sxa/infra && docker compose exec -T postgres pg_dump -U postgres -Fc -d $DB" \
+        > "$OUT"
+fi
+
+SIZE="$(du -h "$OUT" | cut -f1)"
+echo "✓ Saved $SIZE → $OUT"
+echo ""
+if [[ "$OUT" == *.dump ]]; then
+    echo "Inspect: pg_restore -l '$OUT' | head"
+    echo "Restore: createdb sxa_data_local && pg_restore -d sxa_data_local --clean --if-exists '$OUT'"
+else
+    echo "Inspect: zcat '$OUT' | head"
+    echo "Restore: zcat '$OUT' | psql -U postgres"
+fi
