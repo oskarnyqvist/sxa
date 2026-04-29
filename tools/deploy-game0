@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+GAME_DIR="$REPO_ROOT/games/game0"
+LOCAL_WWW="$REPO_ROOT/infra/www/game0"
+
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$REPO_ROOT/secrets/age-key.txt}"
+SERVER_IP="$(sops -d "$REPO_ROOT/secrets/hetzner.sops.env" | awk -F'"' '/^HETZNER_IP=/ {print $2}')"
+
+echo "→ Building game0"
+cd "$GAME_DIR"
+npm run build
+
+echo "→ Updating infra/www/game0"
+rm -rf "$LOCAL_WWW"
+cp -r "$GAME_DIR/dist" "$LOCAL_WWW"
+
+echo "→ Syncing to $SERVER_IP"
+rsync -avz --delete "$LOCAL_WWW/" "root@$SERVER_IP:/root/sxa/infra/www/game0/"
+
+echo "✓ Deployed: https://game0.sxa.se"

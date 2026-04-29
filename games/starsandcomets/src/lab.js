@@ -3,81 +3,147 @@ import { createStar, createComet } from './bodies.js';
 const VEL_ARROW_SCALE = 0.5;
 const ARROW_TIP_HIT   = 14;
 
+const PRESETS = {
+    'Klassisk': { glow: 0,    tailTaper: 0,    tailFade: 0,    speedReactivity: 0   },
+    'Glow':     { glow: 0.6,  tailTaper: 0.7,  tailFade: 0.7,  speedReactivity: 0   },
+    'Neon':     { glow: 1.0,  tailTaper: 0.8,  tailFade: 0.5,  speedReactivity: 0.4 },
+    'Eldkula':  { glow: 0.8,  tailTaper: 0.9,  tailFade: 0.9,  speedReactivity: 1.0 },
+};
+
 export function createLab(canvas, simulator, renderer) {
     let selected = null;
     let mode = 'select'; // 'select' | 'addStar' | 'addComet' | 'edit'
     let dragState = null;
+    let enabled = true;
+    const pointers = new Map(); // pointerId -> { sx, sy }
 
     const panel = document.getElementById('body-panel');
-    const modeButtons = document.querySelectorAll('[data-mode]');
 
     function setMode(m) {
         mode = m;
         selected = null;
         renderPanel();
-        modeButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.mode === m);
-        });
         canvas.style.cursor = m === 'select' || m === 'edit' ? 'default' : 'crosshair';
     }
 
-    modeButtons.forEach(btn => {
-        btn.addEventListener('click', () => setMode(btn.dataset.mode));
-    });
+    function startPan(e) {
+        const cam = renderer.getCamera();
+        dragState = {
+            type: 'pan',
+            startSx: e.offsetX,
+            startSy: e.offsetY,
+            startCam: { x: cam.x, y: cam.y, zoom: cam.zoom },
+        };
+    }
 
-    canvas.addEventListener('mousedown', e => {
+    function startPinch() {
+        const [a, b] = [...pointers.values()];
+        const midSx = (a.sx + b.sx) / 2;
+        const midSy = (a.sy + b.sy) / 2;
+        dragState = {
+            type: 'pinch',
+            startDist: Math.hypot(b.sx - a.sx, b.sy - a.sy) || 1,
+            startZoom: renderer.getCamera().zoom,
+            anchorWorld: renderer.screenToWorld(midSx, midSy),
+        };
+    }
+
+    canvas.addEventListener('pointerdown', e => {
+        pointers.set(e.pointerId, { sx: e.offsetX, sy: e.offsetY });
+
+        if (pointers.size >= 2) {
+            startPinch();
+            return;
+        }
+
+        canvas.setPointerCapture(e.pointerId);
         const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
 
-        if (mode === 'addStar') {
-            const b = simulator.addBody(createStar([wx, wy]));
-            selected = b;
-            setMode('select');
-            renderPanel();
-            return;
-        }
-
-        if (mode === 'addComet') {
-            dragState = { type: 'launch', wx, wy, body: null };
-            const b = simulator.addBody(createComet([wx, wy], [0, 0]));
-            dragState.body = b;
-            selected = b;
-            renderPanel();
-            return;
-        }
-
-        if (mode === 'edit') {
-            // first try arrow tip hit
-            const tipHit = arrowTipAt(wx, wy);
-            if (tipHit) {
-                selected = tipHit;
-                dragState = { type: 'velocity', body: tipHit };
+        if (enabled) {
+            if (mode === 'addStar') {
+                const b = simulator.addBody(createStar([wx, wy]));
+                selected = b;
+                setMode('select');
                 renderPanel();
                 return;
             }
+
+            if (mode === 'addComet') {
+                dragState = { type: 'launch', wx, wy, body: null };
+                const b = simulator.addBody(createComet([wx, wy], [0, 0]));
+                dragState.body = b;
+                selected = b;
+                renderPanel();
+                return;
+            }
+
+            if (mode === 'edit') {
+                const tipHit = arrowTipAt(wx, wy);
+                if (tipHit) {
+                    selected = tipHit;
+                    dragState = { type: 'velocity', body: tipHit };
+                    renderPanel();
+                    return;
+                }
+                const hit = bodyAt(wx, wy);
+                if (hit) {
+                    selected = hit;
+                    dragState = { type: 'move', body: hit };
+                    renderPanel();
+                    return;
+                }
+                selected = null;
+                renderPanel();
+                startPan(e);
+                return;
+            }
+
+            // select mode
             const hit = bodyAt(wx, wy);
             if (hit) {
                 selected = hit;
-                dragState = { type: 'move', body: hit };
-            } else {
-                selected = null;
+                dragState = { type: 'move', body: hit, startWx: wx, startWy: wy, origPos: [...hit.pos] };
+                renderPanel();
+                return;
             }
+            selected = null;
             renderPanel();
+        }
+
+        // play mode (disabled), or empty click in select/edit → pan
+        startPan(e);
+    });
+
+    canvas.addEventListener('pointermove', e => {
+        const p = pointers.get(e.pointerId);
+        if (p) { p.sx = e.offsetX; p.sy = e.offsetY; }
+
+        if (dragState?.type === 'pinch') {
+            if (pointers.size < 2) return;
+            const [a, b] = [...pointers.values()];
+            const midSx = (a.sx + b.sx) / 2;
+            const midSy = (a.sy + b.sy) / 2;
+            const dist = Math.hypot(b.sx - a.sx, b.sy - a.sy);
+            const zoom = Math.max(0.1, Math.min(4, dragState.startZoom * dist / dragState.startDist));
+            const newX = dragState.anchorWorld[0] - (midSx - canvas.width  / 2) / zoom;
+            const newY = dragState.anchorWorld[1] - (midSy - canvas.height / 2) / zoom;
+            renderer.setCamera({ zoom, x: newX, y: newY });
             return;
         }
 
-        // select mode: hit test
-        const hit = bodyAt(wx, wy);
-        if (hit) {
-            selected = hit;
-            dragState = { type: 'move', body: hit, startWx: wx, startWy: wy, origPos: [...hit.pos] };
-        } else {
-            selected = null;
-        }
-        renderPanel();
-    });
-
-    canvas.addEventListener('mousemove', e => {
         if (!dragState) return;
+
+        if (dragState.type === 'pan') {
+            const dx = (e.offsetX - dragState.startSx) / dragState.startCam.zoom;
+            const dy = (e.offsetY - dragState.startSy) / dragState.startCam.zoom;
+            renderer.setCamera({
+                x: dragState.startCam.x - dx,
+                y: dragState.startCam.y - dy,
+            });
+            return;
+        }
+
+        if (!enabled) return;
         const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
 
         if (dragState.type === 'move' && (dragState.body.pinned || mode === 'edit')) {
@@ -97,24 +163,35 @@ export function createLab(canvas, simulator, renderer) {
         }
     });
 
-    canvas.addEventListener('mouseup', e => {
-        if (!dragState) return;
-        const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
+    function endPointer(e) {
+        pointers.delete(e.pointerId);
 
-        if (dragState.type === 'launch') {
+        if (dragState?.type === 'pinch') {
+            if (pointers.size < 2) dragState = null;
+            return;
+        }
+
+        if (!dragState) return;
+
+        if (dragState.type === 'launch' && enabled) {
+            const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
             const dx = dragState.wx - wx;
             const dy = dragState.wy - wy;
             dragState.body.vel = [dx * 2, dy * 2];
         }
 
         dragState = null;
-    });
+    }
+
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
 
     canvas.addEventListener('wheel', e => {
+        e.preventDefault();
         const cam = renderer.getCamera();
         const zoom = Math.max(0.1, Math.min(4, cam.zoom * (e.deltaY > 0 ? 0.9 : 1.1)));
         renderer.setCamera({ zoom });
-    });
+    }, { passive: false });
 
     function bodyAt(wx, wy) {
         for (let i = simulator.bodies.length - 1; i >= 0; i--) {
@@ -153,6 +230,7 @@ export function createLab(canvas, simulator, renderer) {
     }
 
     function drawOverlay(ctx) {
+        if (!enabled) return;
         const cam = renderer.getCamera();
 
         if (mode === 'edit') {
@@ -237,8 +315,35 @@ export function createLab(canvas, simulator, renderer) {
                 <input type="range" data-prop="repelRadius" min="0" max="500" step="10" value="${b.repelRadius}" />
             </label>
             ${b.trail ? `
+            <label>Svansstil
+                <select data-prop="trail.style">
+                    <option value="line"      ${b.trail.style === 'line'      ? 'selected' : ''}>Linje</option>
+                    <option value="particles" ${b.trail.style === 'particles' ? 'selected' : ''}>Partiklar</option>
+                </select>
+            </label>
             <label>Trail-längd <span>${b.trail.maxLength}</span>
                 <input type="range" data-prop="trail.maxLength" min="0" max="5000" step="50" value="${b.trail.maxLength}" />
+            </label>
+            ` : ''}
+            <hr />
+            <label>Stil
+                <select id="preset-select">
+                    <option value="">Egen…</option>
+                    ${Object.keys(PRESETS).map(k => `<option value="${k}">${k}</option>`).join('')}
+                </select>
+            </label>
+            <label>Glow <span>${b.glow.toFixed(2)}</span>
+                <input type="range" data-prop="glow" min="0" max="1" step="0.05" value="${b.glow}" />
+            </label>
+            ${b.trail ? `
+            <label>Svans avsmalning <span>${b.tailTaper.toFixed(2)}</span>
+                <input type="range" data-prop="tailTaper" min="0" max="1" step="0.05" value="${b.tailTaper}" />
+            </label>
+            <label>Svans fade <span>${b.tailFade.toFixed(2)}</span>
+                <input type="range" data-prop="tailFade" min="0" max="1" step="0.05" value="${b.tailFade}" />
+            </label>
+            <label>Fart-reaktion <span>${b.speedReactivity.toFixed(2)}</span>
+                <input type="range" data-prop="speedReactivity" min="0" max="1" step="0.05" value="${b.speedReactivity}" />
             </label>
             ` : ''}
             <button id="delete-body">Ta bort</button>
@@ -261,6 +366,23 @@ export function createLab(canvas, simulator, renderer) {
             });
         });
 
+        panel.querySelectorAll('select[data-prop]').forEach(sel => {
+            sel.addEventListener('change', () => {
+                const path = sel.dataset.prop.split('.');
+                let target = b;
+                for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
+                target[path[path.length - 1]] = sel.value;
+            });
+        });
+
+        const presetSel = panel.querySelector('#preset-select');
+        presetSel?.addEventListener('change', () => {
+            const p = PRESETS[presetSel.value];
+            if (!p) return;
+            Object.assign(b, p);
+            renderPanel();
+        });
+
         panel.querySelector('#delete-body')?.addEventListener('click', () => {
             simulator.removeBody(b);
             selected = null;
@@ -272,5 +394,14 @@ export function createLab(canvas, simulator, renderer) {
         return mode === 'edit';
     }
 
-    return { drawOverlay, setMode, isEditing };
+    function setEnabled(v) {
+        enabled = !!v;
+        if (!enabled) {
+            selected = null;
+            dragState = null;
+            renderPanel();
+        }
+    }
+
+    return { drawOverlay, setMode, isEditing, setEnabled };
 }

@@ -8,9 +8,13 @@ export function createStar(pos, overrides = {}) {
         vel: [0, 0],
         pinned: true,
         attraction: 1,
-        repelRadius: 0,
+        repelRadius: 10,
         radius: 14,
         color: '#f9e2af',
+        glow: 0,
+        tailTaper: 0,
+        tailFade: 0,
+        speedReactivity: 0,
         trail: null,
         ...overrides,
     };
@@ -27,7 +31,11 @@ export function createComet(pos, vel = [0, 0], overrides = {}) {
         repelRadius: 0,
         radius: 6,
         color: '#89b4fa',
-        trail: { maxLength: 300, width: 2, color: '#89b4fa', alpha: 0.6, points: [] },
+        glow: 0,
+        tailTaper: 0.7,
+        tailFade: 0.7,
+        speedReactivity: 0.3,
+        trail: { style: 'line', maxLength: 300, width: 2, color: '#89b4fa', alpha: 0.6, particleSpacing: 3, particleWobble: 0.4, points: [] },
         ...overrides,
     };
 }
