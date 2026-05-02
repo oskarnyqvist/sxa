@@ -4,17 +4,22 @@
     import New from './routes/New.svelte';
     import Me from './routes/Me.svelte';
     import Play from './routes/Play.svelte';
+    import Lab from './routes/Lab.svelte';
+    import BackgroundCanvas from './BackgroundCanvas.svelte';
 
     const routes = {
         '/': Browse,
         '/new': New,
         '/me': Me,
         '/w/:id': Play,
+        '/lab': Lab,
         '*': Browse,
     };
 
     $: isPlay = $location.startsWith('/w/');
 </script>
+
+<BackgroundCanvas active={!isPlay} />
 
 <div class="app" class:immersive={isPlay}>
     <main class="view">
@@ -41,6 +46,8 @@
 
 <style>
     .app {
+        position: relative;
+        z-index: 1;
         height: 100dvh;
         display: flex;
         flex-direction: column;
@@ -59,7 +66,9 @@
     .bottom-nav {
         flex: 0 0 auto;
         display: flex;
-        background: var(--surface);
+        background: var(--surface-soft);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
         border-top: 1px solid var(--border);
         padding-bottom: env(safe-area-inset-bottom);
     }

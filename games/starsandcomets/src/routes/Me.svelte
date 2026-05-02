@@ -105,7 +105,9 @@
     .levels li {
         display: flex;
         align-items: stretch;
-        background: var(--surface);
+        background: var(--surface-soft);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
         border: 1px solid var(--border);
         border-radius: 8px;
         overflow: hidden;

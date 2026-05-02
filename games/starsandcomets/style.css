@@ -13,6 +13,7 @@
     --bg:           var(--c-graphite);
     --bg-canvas:    #1a1d1d;
     --surface:      #2e3337;
+    --surface-soft: rgba(46, 51, 55, 0.72);
     --surface-glass: rgba(11, 70, 123, 0.55);
     --border:       #4a3a3d;
     --border-soft:  #3a3033;
@@ -30,9 +31,14 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html, body {
+html {
     height: 100%;
-    background: var(--bg);
+    background: var(--bg-canvas);
+}
+
+body {
+    height: 100%;
+    background: transparent;
     color: var(--text);
     font: 14px system-ui, sans-serif;
     overflow: hidden;

@@ -170,5 +170,23 @@ export function createRenderer(canvas, world, settings) {
         return { ...camera };
     }
 
-    return { draw, setCamera, getCamera, screenToWorld, worldToScreen };
+    function fitTo(bodies, viewportW, viewportH, padding = 1.25, maxZoom = 1.5) {
+        if (bodies.length === 0) return;
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (const b of bodies) {
+            const r = b.radius || 0;
+            if (b.pos[0] - r < minX) minX = b.pos[0] - r;
+            if (b.pos[1] - r < minY) minY = b.pos[1] - r;
+            if (b.pos[0] + r > maxX) maxX = b.pos[0] + r;
+            if (b.pos[1] + r > maxY) maxY = b.pos[1] + r;
+        }
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const w = Math.max(1, (maxX - minX) * padding);
+        const h = Math.max(1, (maxY - minY) * padding);
+        const zoom = Math.max(0.1, Math.min(maxZoom, viewportW / w, viewportH / h));
+        Object.assign(camera, { x: cx, y: cy, zoom });
+    }
+
+    return { draw, setCamera, getCamera, fitTo, screenToWorld, worldToScreen };
 }
