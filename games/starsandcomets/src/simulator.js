@@ -1,9 +1,21 @@
 const REPEL_FACTOR = 1.5;
+const SPEED_HISTORY_LEN = 120; // ~2 s at 60 fps
+
+function initStats(body) {
+    body.stats = {
+        speedRing: new Float32Array(SPEED_HISTORY_LEN),
+        speedRingIdx: 0,
+        closestApproach: Infinity,
+        age: 0,
+        totalDistance: 0,
+    };
+}
 
 export function createSimulator(world, settings) {
     const bodies = [];
 
     function addBody(body) {
+        initStats(body);
         bodies.push(body);
         return body;
     }
@@ -119,15 +131,27 @@ export function createSimulator(world, settings) {
             body.vel[0] += f[0] * dt;
             body.vel[1] += f[1] * dt;
 
-            if (settings.maxSpeed > 0) {
-                const speed = Math.sqrt(body.vel[0] ** 2 + body.vel[1] ** 2);
-                if (speed > settings.maxSpeed) {
-                    body.vel[0] = (body.vel[0] / speed) * settings.maxSpeed;
-                    body.vel[1] = (body.vel[1] / speed) * settings.maxSpeed;
-                }
+            const speed = Math.sqrt(body.vel[0] ** 2 + body.vel[1] ** 2);
+            if (settings.maxSpeed > 0 && speed > settings.maxSpeed) {
+                body.vel[0] = (body.vel[0] / speed) * settings.maxSpeed;
+                body.vel[1] = (body.vel[1] / speed) * settings.maxSpeed;
             }
 
+            const stepDx = body.vel[0] * dt;
+            const stepDy = body.vel[1] * dt;
             body.pos = world.step(body.pos, body.vel, dt);
+
+            if (!body.stats) initStats(body);
+            const s = body.stats;
+            s.age += dt;
+            s.totalDistance += Math.hypot(stepDx, stepDy);
+            s.speedRing[s.speedRingIdx] = speed;
+            s.speedRingIdx = (s.speedRingIdx + 1) % s.speedRing.length;
+            for (const a of attractors) {
+                if (a === body) continue;
+                const d = world.distance(body.pos, a.pos);
+                if (d < s.closestApproach) s.closestApproach = d;
+            }
 
             if (body.trail) {
                 body.trail.points.push(body.pos[0], body.pos[1]);
@@ -140,4 +164,12 @@ export function createSimulator(world, settings) {
     }
 
     return { bodies, addBody, removeBody, tick };
+}
+
+export function recentMaxSpeed(body) {
+    if (!body.stats) return 0;
+    const ring = body.stats.speedRing;
+    let m = 0;
+    for (let i = 0; i < ring.length; i++) if (ring[i] > m) m = ring[i];
+    return m;
 }
