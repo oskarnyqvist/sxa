@@ -1,5 +1,5 @@
 import { createStar, createComet } from './bodies.js';
-import { selected as selectedStore } from './stores/selection.js';
+import { selected as selectedStore, lifted as liftedStore, bodies as bodiesStore } from './stores/selection.js';
 
 const VEL_ARROW_SCALE = 0.5;
 const HANDLE_HIT_RADIUS = 22;
@@ -13,10 +13,25 @@ export function createLab(canvas, simulator, renderer) {
     const pointers = new Map();
 
     // Mirror the store locally so hit-tests and overlay don't pay subscribe overhead per frame.
-    const unsubscribe = selectedStore.subscribe(v => { selected = v; });
+    const unsubSelected = selectedStore.subscribe(v => { selected = v; });
+
+    // Lifted store drives body.lifted flag — sim filters lifted bodies out of physics.
+    let prevLifted = null;
+    const unsubLifted = liftedStore.subscribe(b => {
+        if (prevLifted && prevLifted !== b) prevLifted.lifted = false;
+        if (b) b.lifted = true;
+        prevLifted = b;
+    });
+
+    // Publish the body list so panels can render it without poking each other.
+    bodiesStore.set(simulator.bodies);
 
     function setSelected(body) {
         selectedStore.set(body);
+    }
+
+    function pokeBodies() {
+        bodiesStore.set(simulator.bodies);
     }
 
     function startPan(e) {
@@ -226,6 +241,15 @@ export function createLab(canvas, simulator, renderer) {
         const cam = renderer.getCamera();
 
         const [sx, sy] = renderer.worldToScreen(selected.pos[0], selected.pos[1]);
+
+        // Soft halo when lifted out of physics — signals "frozen, you can edit".
+        if (selected.lifted) {
+            ctx.beginPath();
+            ctx.arc(sx, sy, (selected.radius + 14) * cam.zoom, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(206, 161, 88, 0.18)';
+            ctx.fill();
+        }
+
         ctx.beginPath();
         ctx.arc(sx, sy, (selected.radius + 6) * cam.zoom, 0, Math.PI * 2);
         ctx.strokeStyle = '#E1DACA';
@@ -267,6 +291,7 @@ export function createLab(canvas, simulator, renderer) {
     function removeBody(b) {
         simulator.removeBody(b);
         if (selected === b) setSelected(null);
+        pokeBodies();
     }
 
     function spawnAt(type, sx, sy) {
@@ -275,12 +300,20 @@ export function createLab(canvas, simulator, renderer) {
             ? simulator.addBody(createStar([wx, wy]))
             : simulator.addBody(createComet([wx, wy], [0, 0]));
         setSelected(body);
+        pokeBodies();
         return body;
     }
 
-    function teardown() {
-        unsubscribe();
+    function spawnAtCenter(type) {
+        return spawnAt(type, canvas.width / 2, canvas.height / 2);
     }
 
-    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt, teardown };
+    function teardown() {
+        liftedStore.set(null); // clear flag on any held body before tearing down
+        unsubSelected();
+        unsubLifted();
+        bodiesStore.set([]);
+    }
+
+    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt, spawnAtCenter, teardown };
 }

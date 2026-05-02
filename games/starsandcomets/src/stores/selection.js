@@ -27,3 +27,7 @@ export const selected = notifying(null);
 // In edit mode this typically tracks `selected`. Set to null in view mode.
 // While lifted, simulator skips the body (no force, no movement).
 export const lifted = notifying(null);
+
+// Mirror of sim.bodies. Lab pokes this on add/remove so list UIs re-render.
+// Same array reference — relies on always-notify behavior.
+export const bodies = notifying([]);

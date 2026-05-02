@@ -3,10 +3,9 @@
     import { defaultDraft } from '../play/presets.js';
     import { serialize, deserialize } from '../world/serialize.js';
     import { getLevel, createLevel, updateLevel, whoami, loginUrl } from '../api.js';
-    import { selected } from '../stores/selection.js';
+    import { selected, lifted } from '../stores/selection.js';
     import PlayCanvas from '../play/PlayCanvas.svelte';
     import EditPanel from '../play/EditPanel.svelte';
-    import Toolbox from '../play/Toolbox.svelte';
 
     export let params = {};
 
@@ -27,6 +26,11 @@
     let saveState = 'idle';
 
     $: isDraft = params.id === 'draft';
+
+    // In edit mode the selected body is also lifted out of physics so the user
+    // can pose/edit without it flying away. View mode releases everything.
+    $: if (mode === 'edit') lifted.set($selected);
+    $: if (mode === 'view') lifted.set(null);
 
     (async () => {
         try {
@@ -57,8 +61,8 @@
         lab?.removeBody(body);
     }
 
-    function spawnFromToolbox(type, sx, sy) {
-        lab?.spawnAt(type, sx, sy);
+    function spawn(type) {
+        lab?.spawnAtCenter(type);
     }
 
     function toggleMode() {
@@ -124,10 +128,6 @@
             />
         {/if}
 
-        {#if mode === 'edit' && canvasEl}
-            <Toolbox canvas={canvasEl} onSpawn={spawnFromToolbox} />
-        {/if}
-
         <div class="hud-speed">
             <input type="range" min="0" max="2" step="0.05" value={timeScale} on:input={onSpeedInput} />
             <span>{timeScale.toFixed(2)}x</span>
@@ -136,7 +136,7 @@
 
     {#if mode === 'edit' && settings}
         <div class="panel-area">
-            <EditPanel {settings} onDelete={deleteBody} />
+            <EditPanel bind:settings onSpawn={spawn} onDelete={deleteBody} />
         </div>
     {/if}
 
