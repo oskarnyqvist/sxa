@@ -38,7 +38,7 @@
         on:pointerup={end}
         on:pointercancel={end}
     >
-        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="#f9e2af" d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z"/></svg>
+        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="#CEA158" d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z"/></svg>
     </button>
     <button
         class="icon comet"
@@ -49,8 +49,8 @@
         on:pointercancel={end}
     >
         <svg viewBox="0 0 24 24" width="22" height="22">
-            <circle cx="17" cy="7" r="4" fill="#89b4fa"/>
-            <path d="M14 10 L4 20" stroke="#89b4fa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+            <circle cx="17" cy="7" r="4" fill="#3983B1"/>
+            <path d="M14 10 L4 20" stroke="#3983B1" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
         </svg>
     </button>
 </div>
@@ -58,11 +58,11 @@
 {#if drag}
     <div class="ghost" style="left: {drag.x}px; top: {drag.y}px;">
         {#if drag.type === 'star'}
-            <svg viewBox="0 0 24 24" width="40" height="40"><path fill="#f9e2af" d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z"/></svg>
+            <svg viewBox="0 0 24 24" width="40" height="40"><path fill="#CEA158" d="M12 2l2.39 7.36H22l-6.18 4.49L18.21 21 12 16.51 5.79 21l2.39-7.15L2 9.36h7.61z"/></svg>
         {:else}
             <svg viewBox="0 0 24 24" width="40" height="40">
-                <circle cx="17" cy="7" r="4" fill="#89b4fa"/>
-                <path d="M14 10 L4 20" stroke="#89b4fa" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+                <circle cx="17" cy="7" r="4" fill="#3983B1"/>
+                <path d="M14 10 L4 20" stroke="#3983B1" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
             </svg>
         {/if}
     </div>
@@ -77,10 +77,10 @@
         display: flex;
         flex-direction: column;
         gap: 6px;
-        background: rgba(17, 17, 27, 0.85);
+        background: var(--surface-glass);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid #313244;
+        border: 1px solid var(--border);
         border-radius: 999px;
         padding: 6px;
         z-index: 6;
@@ -99,7 +99,7 @@
         touch-action: none;
         padding: 0;
     }
-    .icon:active { cursor: grabbing; background: #313244; }
+    .icon:active { cursor: grabbing; background: var(--border); }
 
     .ghost {
         position: fixed;

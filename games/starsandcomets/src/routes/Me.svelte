@@ -75,14 +75,14 @@
         margin: 0 auto;
     }
     header { margin-bottom: 24px; }
-    h1 { font-size: 28px; font-weight: 600; color: #cdd6f4; }
-    .sub { color: #6c7086; margin-top: 4px; }
+    h1 { font-size: 28px; font-weight: 600; color: var(--text); }
+    .sub { color: var(--text-dim); margin-top: 4px; }
     .empty {
-        color: #45475a;
+        color: var(--text-faint);
         font-size: 13px;
         padding: 24px;
         text-align: center;
-        border: 1px dashed #313244;
+        border: 1px dashed var(--border);
         border-radius: 8px;
     }
     .cta {
@@ -90,8 +90,8 @@
         margin-top: 16px;
         padding: 14px 16px;
         text-align: center;
-        background: #89b4fa;
-        color: #11111b;
+        background: var(--cta);
+        color: var(--cta-text);
         font-weight: 600;
         text-decoration: none;
         border-radius: 8px;
@@ -105,8 +105,8 @@
     .levels li {
         display: flex;
         align-items: stretch;
-        background: #11111b;
-        border: 1px solid #313244;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 8px;
         overflow: hidden;
     }
@@ -114,18 +114,18 @@
         flex: 1;
         padding: 14px 16px;
         text-decoration: none;
-        color: #cdd6f4;
+        color: var(--text);
     }
     .title { display: block; font-weight: 600; font-size: 15px; }
-    .desc { display: block; font-size: 12px; color: #6c7086; margin-top: 4px; }
+    .desc { display: block; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
     .del {
         background: transparent;
-        color: #6c7086;
+        color: var(--text-dim);
         border: none;
-        border-left: 1px solid #313244;
+        border-left: 1px solid var(--border);
         padding: 0 16px;
         font-size: 18px;
         cursor: pointer;
     }
-    .del:hover { color: #f38ba8; }
+    .del:hover { color: var(--accent); }
 </style>

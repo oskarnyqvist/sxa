@@ -1,9 +1,39 @@
+:root {
+    /* Raw palette — Studio Ghibli */
+    --c-graphite:     #242828;
+    --c-mermaid:      #0B467B;
+    --c-mediterranean:#3983B1;
+    --c-eucalyptus:   #329960;
+    --c-camel:        #CEA158;
+    --c-velvet:       #B51B8B;
+    --c-kofte:        #723740;
+    --c-albescent:    #E1DACA;
+
+    /* Roles */
+    --bg:           var(--c-graphite);
+    --bg-canvas:    #1a1d1d;
+    --surface:      #2e3337;
+    --surface-glass: rgba(11, 70, 123, 0.55);
+    --border:       #4a3a3d;
+    --border-soft:  #3a3033;
+    --text:         var(--c-albescent);
+    --text-dim:     #9b9183;
+    --text-faint:   #6a6258;
+    --link:         var(--c-mediterranean);
+    --accent:       var(--c-velvet);
+    --positive:     var(--c-eucalyptus);
+    --star:         var(--c-camel);
+    --comet:        var(--c-mediterranean);
+    --cta:          var(--c-camel);
+    --cta-text:     var(--c-graphite);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
     height: 100%;
-    background: #0d0d1a;
-    color: #cdd6f4;
+    background: var(--bg);
+    color: var(--text);
     font: 14px system-ui, sans-serif;
     overflow: hidden;
     -webkit-font-smoothing: antialiased;

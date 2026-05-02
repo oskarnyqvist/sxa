@@ -196,12 +196,12 @@
         align-items: center;
         justify-content: center;
         gap: 12px;
-        background: rgba(17, 17, 27, 0.9);
-        color: #cdd6f4;
+        background: rgba(36, 40, 40, 0.9);
+        color: var(--text);
         z-index: 10;
     }
-    .overlay.error { color: #f38ba8; }
-    .overlay a { color: #89b4fa; }
+    .overlay.error { color: var(--accent); }
+    .overlay a { color: var(--link); }
 
     .hud-top {
         position: absolute;
@@ -224,11 +224,11 @@
     :global(.hud-top .hud-btn),
     :global(.hud-top a.hud-btn),
     :global(.hud-top button.hud-btn) {
-        background: rgba(17, 17, 27, 0.85);
+        background: var(--surface-glass);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        color: #cdd6f4;
-        border: 1px solid #313244;
+        color: var(--text);
+        border: 1px solid var(--border);
         border-radius: 999px;
         height: 40px;
         min-width: 40px;
@@ -262,10 +262,10 @@
         bottom: calc(12px + env(safe-area-inset-bottom));
         left: 50%;
         transform: translateX(-50%);
-        background: rgba(17, 17, 27, 0.85);
+        background: var(--surface-glass);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid #313244;
+        border: 1px solid var(--border);
         border-radius: 999px;
         padding: 8px 14px;
         display: flex;
@@ -276,11 +276,11 @@
 
     .hud-speed input[type="range"] {
         width: 140px;
-        accent-color: #89b4fa;
+        accent-color: var(--cta);
     }
 
     .hud-speed span {
-        color: #89b4fa;
+        color: var(--cta);
         font-size: 12px;
         min-width: 38px;
         text-align: right;

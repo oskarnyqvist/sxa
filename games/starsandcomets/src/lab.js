@@ -215,7 +215,7 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
     function drawHandle(ctx, sx, sy, color, icon) {
         ctx.beginPath();
         ctx.arc(sx, sy, HANDLE_VISUAL_RADIUS, 0, Math.PI * 2);
-        ctx.fillStyle = '#11111b';
+        ctx.fillStyle = '#242828';
         ctx.fill();
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
@@ -237,7 +237,7 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         const [sx, sy] = renderer.worldToScreen(selected.pos[0], selected.pos[1]);
         ctx.beginPath();
         ctx.arc(sx, sy, (selected.radius + 6) * cam.zoom, 0, Math.PI * 2);
-        ctx.strokeStyle = '#cdd6f4';
+        ctx.strokeStyle = '#E1DACA';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 4]);
         ctx.stroke();
@@ -246,7 +246,7 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         if (selected.attraction && selected.repelRadius > 0) {
             ctx.beginPath();
             ctx.arc(sx, sy, selected.repelRadius * cam.zoom, 0, Math.PI * 2);
-            ctx.strokeStyle = '#f38ba8';
+            ctx.strokeStyle = '#B51B8B';
             ctx.lineWidth = 1;
             ctx.setLineDash([2, 6]);
             ctx.stroke();
@@ -258,13 +258,13 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
                 selected.pos[0] + selected.vel[0] * VEL_ARROW_SCALE,
                 selected.pos[1] + selected.vel[1] * VEL_ARROW_SCALE,
             );
-            drawArrow(ctx, sx, sy, tx, ty, '#89b4fa');
+            drawArrow(ctx, sx, sy, tx, ty, '#3983B1');
         }
 
         for (const h of handlesFor(selected)) {
-            const color = h.kind === 'radius'   ? '#cdd6f4'
-                        : h.kind === 'repel'    ? '#f38ba8'
-                        : '#89b4fa';
+            const color = h.kind === 'radius'   ? '#E1DACA'
+                        : h.kind === 'repel'    ? '#B51B8B'
+                        : '#3983B1';
             const icon  = h.kind === 'radius' ? '↔'
                         : h.kind === 'repel'  ? '⇲'
                         : '→';

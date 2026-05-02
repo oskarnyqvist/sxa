@@ -37,7 +37,7 @@ export function createRenderer(canvas, world, settings) {
 
     function draw(bodies, now) {
         resize();
-        ctx.fillStyle = '#0d0d1a';
+        ctx.fillStyle = '#1a1d1d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         for (const body of bodies) {

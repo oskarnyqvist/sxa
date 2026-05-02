@@ -59,8 +59,8 @@
     .bottom-nav {
         flex: 0 0 auto;
         display: flex;
-        background: #11111b;
-        border-top: 1px solid #313244;
+        background: var(--surface);
+        border-top: 1px solid var(--border);
         padding-bottom: env(safe-area-inset-bottom);
     }
 
@@ -72,14 +72,14 @@
         justify-content: center;
         gap: 2px;
         padding: 10px 0;
-        color: #6c7086;
+        color: var(--text-dim);
         text-decoration: none;
         font-size: 11px;
         font-weight: 500;
     }
 
     .bottom-nav a.active {
-        color: #89b4fa;
+        color: var(--cta);
     }
 
     .bottom-nav .icon {

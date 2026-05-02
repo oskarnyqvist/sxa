@@ -187,10 +187,10 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(17, 17, 27, 0.96);
+        background: rgba(36, 40, 40, 0.96);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
-        border-top: 1px solid #313244;
+        border-top: 1px solid var(--border);
         border-top-left-radius: 16px;
         border-top-right-radius: 16px;
         z-index: 8;
@@ -223,14 +223,14 @@
     .grip .bar {
         width: 36px;
         height: 4px;
-        background: #45475a;
+        background: var(--text-faint);
         border-radius: 2px;
         margin: 0 auto 6px;
     }
     .grip .title {
         text-align: center;
         font-size: 13px;
-        color: #cdd6f4;
+        color: var(--text);
         font-weight: 500;
     }
 
@@ -244,14 +244,14 @@
     section + section {
         margin-top: 12px;
         padding-top: 12px;
-        border-top: 1px solid #1e1e2e;
+        border-top: 1px solid var(--border-soft);
     }
 
     h3 {
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
-        color: #6c7086;
+        color: var(--text-dim);
         margin-bottom: 8px;
     }
 
@@ -259,14 +259,14 @@
         display: flex;
         flex-direction: column;
         gap: 3px;
-        color: #9399b2;
+        color: var(--text-dim);
         font-size: 12px;
         margin-bottom: 10px;
     }
 
     label span {
         float: right;
-        color: #89b4fa;
+        color: var(--cta);
     }
 
     label.checkbox {
@@ -277,27 +277,27 @@
     }
 
     input[type="text"], input[type="color"], select {
-        background: #1e1e2e;
-        border: 1px solid #313244;
+        background: var(--bg-canvas);
+        border: 1px solid var(--border);
         border-radius: 6px;
-        color: #cdd6f4;
+        color: var(--text);
         padding: 6px 8px;
         width: 100%;
     }
     input[type="color"] { padding: 2px; height: 32px; cursor: pointer; }
-    input[type="range"] { width: 100%; accent-color: #89b4fa; }
-    input[type="checkbox"] { accent-color: #89b4fa; }
+    input[type="range"] { width: 100%; accent-color: var(--cta); }
+    input[type="checkbox"] { accent-color: var(--cta); }
 
     hr {
         border: none;
-        border-top: 1px solid #1e1e2e;
+        border-top: 1px solid var(--border-soft);
         margin: 6px 0;
     }
 
     button.danger {
-        background: #313244;
-        color: #f38ba8;
-        border: 1px solid #45475a;
+        background: var(--surface);
+        color: var(--accent);
+        border: 1px solid var(--border);
         border-radius: 8px;
         padding: 10px;
         cursor: pointer;
@@ -305,5 +305,5 @@
         width: 100%;
         font-weight: 500;
     }
-    button.danger:hover { background: #45475a; }
+    button.danger:hover { background: var(--border); }
 </style>

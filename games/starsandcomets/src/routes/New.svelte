@@ -35,8 +35,8 @@
         margin: 0 auto;
     }
     header { margin-bottom: 24px; }
-    h1 { font-size: 28px; font-weight: 600; color: #cdd6f4; }
-    .sub { color: #6c7086; margin-top: 4px; }
+    h1 { font-size: 28px; font-weight: 600; color: var(--text); }
+    .sub { color: var(--text-dim); margin-top: 4px; }
     .presets {
         list-style: none;
         display: flex;
@@ -52,18 +52,18 @@
         width: 100%;
         text-align: left;
         padding: 16px;
-        background: #11111b;
-        border: 1px solid #313244;
+        background: var(--surface);
+        border: 1px solid var(--border);
         border-radius: 8px;
-        color: #cdd6f4;
+        color: var(--text);
         font: inherit;
         cursor: pointer;
     }
-    .presets button:hover { border-color: #89b4fa; }
+    .presets button:hover { border-color: var(--cta); }
     .presets li.disabled {
-        color: #45475a;
+        color: var(--text-faint);
         cursor: not-allowed;
     }
     .title { display: block; font-weight: 600; font-size: 15px; }
-    .desc { display: block; font-size: 12px; color: #6c7086; margin-top: 4px; }
+    .desc { display: block; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
 </style>
