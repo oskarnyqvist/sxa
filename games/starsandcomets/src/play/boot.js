@@ -3,12 +3,12 @@ import { createSimulator }     from '../simulator.js';
 import { createRenderer }      from '../renderer.js';
 import { createLab }           from '../lab.js';
 
-export function bootPlay({ canvas, initial, onSelect }) {
+export function bootPlay({ canvas, initial }) {
     const world    = createToroidalWorld({ width: initial.world.width, height: initial.world.height });
     const settings = { ...initial.settings };
     const sim      = createSimulator(world, settings);
     const ren      = createRenderer(canvas, world, settings);
-    const lab      = createLab(canvas, sim, ren, { onSelect });
+    const lab      = createLab(canvas, sim, ren);
 
     for (const body of initial.bodies) sim.addBody(body);
     ren.setCamera({ x: world.width / 2, y: world.height / 2, zoom: 1 });
@@ -30,6 +30,7 @@ export function bootPlay({ canvas, initial, onSelect }) {
 
     function teardown() {
         cancelAnimationFrame(raf);
+        lab.teardown();
     }
 
     return { teardown, setTimeScale, lab, sim, ren, world, settings };

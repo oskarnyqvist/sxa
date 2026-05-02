@@ -1,10 +1,14 @@
 <script>
-    import { tick } from 'svelte';
+    import { onDestroy, tick } from 'svelte';
+    import { selected as selectedStore } from '../stores/selection.js';
 
     export let settings;
-    export let selected = null;
     export let snap = 'closed'; // 'closed' | 'peek' | 'full'
     export let onDelete = () => {};
+
+    let selected = null;
+    const unsubSelected = selectedStore.subscribe(v => { selected = v; });
+    onDestroy(unsubSelected);
 
     const PRESETS = {
         'Klassisk': { glow: 0,    tailTaper: 0,    tailFade: 0,    speedReactivity: 0   },
@@ -19,7 +23,8 @@
 
     $: if (selected && snap === 'closed') snap = 'peek';
 
-    function poke() { selected = selected; settings = settings; }
+    // Re-notify subscribers (incl. ourselves) so {selected.foo} expressions re-read after mutation.
+    function poke() { selectedStore.set(selected); settings = settings; }
 
     function applyPreset(name) {
         const p = PRESETS[name];

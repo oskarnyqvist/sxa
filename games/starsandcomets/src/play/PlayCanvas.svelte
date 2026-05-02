@@ -3,7 +3,6 @@
     import { bootPlay } from './boot.js';
 
     export let initial;
-    export let onSelect = () => {};
 
     // Bound back to the parent so it can call lab/sim/world/settings APIs.
     export let canvasEl = null;
@@ -17,7 +16,7 @@
     let teardown;
 
     onMount(() => {
-        const boot = bootPlay({ canvas, initial, onSelect });
+        const boot = bootPlay({ canvas, initial });
         canvasEl = canvas;
         lab = boot.lab;
         sim = boot.sim;

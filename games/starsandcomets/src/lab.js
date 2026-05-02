@@ -1,18 +1,22 @@
 import { createStar, createComet } from './bodies.js';
+import { selected as selectedStore } from './stores/selection.js';
 
 const VEL_ARROW_SCALE = 0.5;
 const HANDLE_HIT_RADIUS = 22;
 const HANDLE_VISUAL_RADIUS = 8;
 const MIN_HANDLE_SCREEN_DIST = 36;
 
-export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
+export function createLab(canvas, simulator, renderer) {
     let selected = null;
     let dragState = null;
     let enabled = true;
     const pointers = new Map();
 
-    function notify() {
-        onSelect?.(selected);
+    // Mirror the store locally so hit-tests and overlay don't pay subscribe overhead per frame.
+    const unsubscribe = selectedStore.subscribe(v => { selected = v; });
+
+    function setSelected(body) {
+        selectedStore.set(body);
     }
 
     function startPan(e) {
@@ -96,15 +100,13 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
             const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
             const hit = bodyAt(wx, wy);
             if (hit) {
-                selected = hit;
+                setSelected(hit);
                 dragState = { type: 'move', body: hit };
-                notify();
                 return;
             }
 
             if (selected) {
-                selected = null;
-                notify();
+                setSelected(null);
             }
         }
 
@@ -175,7 +177,8 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         if (dragState.type?.startsWith('handle-')
             || dragState.type === 'velocity'
             || dragState.type === 'move') {
-            notify();
+            // Drag mutated the body in place; nudge subscribers so panels refresh.
+            setSelected(selected);
         }
 
         dragState = null;
@@ -256,18 +259,14 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
     function setEnabled(v) {
         enabled = !!v;
         if (!enabled) {
-            selected = null;
             dragState = null;
-            notify();
+            setSelected(null);
         }
     }
 
     function removeBody(b) {
         simulator.removeBody(b);
-        if (selected === b) {
-            selected = null;
-            notify();
-        }
+        if (selected === b) setSelected(null);
     }
 
     function spawnAt(type, sx, sy) {
@@ -275,10 +274,13 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         const body = type === 'star'
             ? simulator.addBody(createStar([wx, wy]))
             : simulator.addBody(createComet([wx, wy], [0, 0]));
-        selected = body;
-        notify();
+        setSelected(body);
         return body;
     }
 
-    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt };
+    function teardown() {
+        unsubscribe();
+    }
+
+    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt, teardown };
 }

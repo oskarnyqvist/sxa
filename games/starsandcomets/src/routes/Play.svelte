@@ -3,6 +3,7 @@
     import { defaultDraft } from '../play/presets.js';
     import { serialize, deserialize } from '../world/serialize.js';
     import { getLevel, createLevel, updateLevel, whoami, loginUrl } from '../api.js';
+    import { selected } from '../stores/selection.js';
     import PlayCanvas from '../play/PlayCanvas.svelte';
     import BottomSheet from '../play/BottomSheet.svelte';
     import Toolbox from '../play/Toolbox.svelte';
@@ -17,7 +18,6 @@
     let setTimeScale = () => {};
 
     let initial = null;
-    let selectedBody = null;
     let sheetSnap = 'closed';
     let locked = false;
     let timeScale = 1;
@@ -67,7 +67,7 @@
         lab?.setEnabled(!locked);
         if (locked) {
             sheetSnap = 'closed';
-            selectedBody = null;
+            selected.set(null);
         }
     }
 
@@ -116,7 +116,6 @@
     {#if initial}
         <PlayCanvas
             {initial}
-            onSelect={(body) => { selectedBody = body; }}
             bind:canvasEl
             bind:lab
             bind:sim
@@ -157,7 +156,6 @@
     {#if !locked && settings}
         <BottomSheet
             bind:settings
-            bind:selected={selectedBody}
             bind:snap={sheetSnap}
             onDelete={deleteBody}
         />
