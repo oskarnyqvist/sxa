@@ -46,11 +46,6 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         const rDist = Math.max(body.radius * cam.zoom, MIN_HANDLE_SCREEN_DIST);
         out.push({ kind: 'radius', sx: sx + rDist, sy });
 
-        if (body.attraction) {
-            const repelDist = Math.max(body.repelRadius * cam.zoom, MIN_HANDLE_SCREEN_DIST);
-            out.push({ kind: 'repel', sx, sy: sy + repelDist });
-        }
-
         if (!body.pinned) {
             const [tx, ty] = renderer.worldToScreen(
                 body.pos[0] + body.vel[0] * VEL_ARROW_SCALE,
@@ -94,7 +89,6 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
             const h = handleAt(e.offsetX, e.offsetY);
             if (h) {
                 if (h.kind === 'radius')   dragState = { type: 'handle-radius',   body: selected };
-                if (h.kind === 'repel')    dragState = { type: 'handle-repel',    body: selected };
                 if (h.kind === 'velocity') dragState = { type: 'velocity',        body: selected };
                 return;
             }
@@ -165,12 +159,6 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
             const dx = wx - dragState.body.pos[0];
             const dy = wy - dragState.body.pos[1];
             dragState.body.radius = Math.max(2, Math.min(60, Math.round(Math.hypot(dx, dy))));
-        }
-
-        if (dragState.type === 'handle-repel') {
-            const dx = wx - dragState.body.pos[0];
-            const dy = wy - dragState.body.pos[1];
-            dragState.body.repelRadius = Math.max(0, Math.min(500, Math.round(Math.hypot(dx, dy) / 10) * 10));
         }
     });
 
@@ -243,16 +231,6 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        if (selected.attraction && selected.repelRadius > 0) {
-            ctx.beginPath();
-            ctx.arc(sx, sy, selected.repelRadius * cam.zoom, 0, Math.PI * 2);
-            ctx.strokeStyle = '#B51B8B';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([2, 6]);
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
-
         if (!selected.pinned) {
             const [tx, ty] = renderer.worldToScreen(
                 selected.pos[0] + selected.vel[0] * VEL_ARROW_SCALE,
@@ -262,12 +240,8 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         }
 
         for (const h of handlesFor(selected)) {
-            const color = h.kind === 'radius'   ? '#E1DACA'
-                        : h.kind === 'repel'    ? '#B51B8B'
-                        : '#3983B1';
-            const icon  = h.kind === 'radius' ? '↔'
-                        : h.kind === 'repel'  ? '⇲'
-                        : '→';
+            const color = h.kind === 'radius' ? '#E1DACA' : '#3983B1';
+            const icon  = h.kind === 'radius' ? '↔'       : '→';
             drawHandle(ctx, h.sx, h.sy, color, icon);
         }
     }
@@ -276,8 +250,7 @@ export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
         if (!dragState) return false;
         return dragState.type === 'move'
             || dragState.type === 'velocity'
-            || dragState.type === 'handle-radius'
-            || dragState.type === 'handle-repel';
+            || dragState.type === 'handle-radius';
     }
 
     function setEnabled(v) {

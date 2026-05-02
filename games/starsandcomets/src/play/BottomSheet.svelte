@@ -119,9 +119,6 @@
                         on:change={(e) => { selected.attraction = e.target.checked ? 1 : 0; poke(); }} />
                     Attraherar
                 </label>
-                <label>Repel-radie <span>{selected.repelRadius}</span>
-                    <input type="range" min="0" max="500" step="10" bind:value={selected.repelRadius} on:input={poke} />
-                </label>
                 {#if selected.trail}
                     <label>Svansstil
                         <select bind:value={selected.trail.style} on:change={poke}>
@@ -167,15 +164,6 @@
             </label>
             <label>Max hastighet <span>{settings.maxSpeed}</span>
                 <input type="range" min="0" max="3000" step="50" bind:value={settings.maxSpeed} on:input={poke} />
-            </label>
-            <label>Attraktionsläge
-                <select bind:value={settings.attractionMode} on:change={poke}>
-                    <option value="nearest">Närmast</option>
-                    <option value="all">Alla lika</option>
-                    <option value="weighted">Alla viktade</option>
-                    <option value="normalized">Alla normaliserade</option>
-                    <option value="normalized2">Alla normaliserade²</option>
-                </select>
             </label>
         </section>
     </div>

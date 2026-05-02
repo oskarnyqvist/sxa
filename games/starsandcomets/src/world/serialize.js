@@ -2,7 +2,7 @@ export const SCHEMA_VERSION = 1;
 
 const BODY_FIELDS = [
     'id', 'name', 'pos', 'vel',
-    'pinned', 'attraction', 'repelRadius', 'radius',
+    'pinned', 'attraction', 'radius',
     'color', 'glow', 'tailTaper', 'tailFade', 'speedReactivity',
 ];
 
