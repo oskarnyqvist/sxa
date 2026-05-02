@@ -17,13 +17,24 @@ export function createSimulator(world, settings) {
         const dir = world.direction(body.pos, attractor.pos);
         const sizeFactor = attractor.radius / maxAttractorRadius;
         let accel;
+        let perpAccel = 0;
         if (attractor.repelRadius > 0 && dist < attractor.repelRadius) {
             const ratio = attractor.repelRadius / dist;
             accel = -attractor.attraction * settings.acceleration * ratio * ratio;
+            // Break head-on symmetry deterministically — without this a comet
+            // approaching dead-on bounces back in 1D instead of swinging round.
+            const speed = Math.hypot(body.vel[0], body.vel[1]);
+            if (speed > 0) {
+                const headOn = Math.abs((body.vel[0] * dir[0] + body.vel[1] * dir[1]) / speed);
+                const sign = (body.id & 1) ? -1 : 1;
+                perpAccel = sign * Math.abs(accel) * 0.5 * headOn;
+            }
         } else {
             accel = attractor.attraction * settings.acceleration;
         }
-        return [dir[0] * accel * weight * sizeFactor, dir[1] * accel * weight * sizeFactor];
+        const fx = (dir[0] * accel + (-dir[1]) * perpAccel) * weight * sizeFactor;
+        const fy = (dir[1] * accel + ( dir[0]) * perpAccel) * weight * sizeFactor;
+        return [fx, fy];
     }
 
     function tick(dt) {
