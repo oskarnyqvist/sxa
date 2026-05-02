@@ -53,8 +53,9 @@ export function createSimulator(world, settings) {
     }
 
     function tick(dt) {
-        const attractors = bodies.filter(b => b.attraction !== 0);
-        const movable    = bodies.filter(b => !b.pinned);
+        // Lifted bodies are temporarily out of physics — they don't pull, get pulled, or move.
+        const attractors = bodies.filter(b => b.attraction !== 0 && !b.lifted);
+        const movable    = bodies.filter(b => !b.pinned && !b.lifted);
 
         maxAttractorRadius = 1;
         for (const a of attractors) if (a.radius > maxAttractorRadius) maxAttractorRadius = a.radius;

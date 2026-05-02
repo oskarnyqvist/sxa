@@ -41,6 +41,7 @@ function deserializeBody(b) {
     } else {
         body.trail = null;
     }
+    body.lifted = false;
     return body;
 }
 

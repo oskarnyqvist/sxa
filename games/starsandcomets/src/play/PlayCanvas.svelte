@@ -24,6 +24,9 @@
         settings = boot.settings;
         setTimeScale = boot.setTimeScale;
         teardown = boot.teardown;
+        if (import.meta.env.DEV) {
+            window.__play = { sim: boot.sim, lab: boot.lab, world: boot.world, settings: boot.settings, ren: boot.ren };
+        }
     });
 
     onDestroy(() => {
