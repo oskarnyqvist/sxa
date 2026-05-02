@@ -1,184 +1,188 @@
 # Interaktion och tillstånd i Stars & Comets
 
-Det här dokumentet beskriver hur man interagerar med en värld i `/w/:id`-vyn — vilka lägen (states) som finns, vilka inställningar som är tillgängliga i varje läge, och hur simulatorn reagerar (kör/pausad).
+Det här dokumentet beskriver hur man interagerar med en värld i `/w/:id`-vyn — vilka tillstånd som finns, vilka inställningar som är tillgängliga var, och när simulatorn pausar.
 
-Allt nedan utgår från `src/routes/Play.svelte` + `src/play/boot.js` + `src/lab.js` + `src/simulator.js`.
-
----
-
-## 1. Översikt — två huvudtillstånd
-
-Spelvyn har två yttre tillstånd som styrs av `isEditing` i `Play.svelte`:
-
-| Tillstånd | `isEditing` | `lab.enabled` | HUD-knappar (uppe höger) |
-|---|---|---|---|
-| **Visningsläge** (default) | `false` | `false` | `Spara`/`Uppdatera`, `✎ Redigera` |
-| **Redigeringsläge** | `true` | `true` | `Lägesväljare`, `⚙ Inställningar`, `✓ Klar` |
-
-Man växlar med `✎ Redigera` → går in i redigering, och `✓ Klar` → går tillbaka till visning. När man lämnar redigering återställs läget till `select`.
-
-I **båda** tillstånden finns alltid:
-- En **bakåt-knapp** (`←`) uppe vänster — tillbaka till `/`.
-- En **hastighetsreglage** nedtill (`hud-speed`, `0–2x`, steg `0.05`).
-- **Pan** (dra på tom yta) och **pinch / mushjul-zoom** på canvas.
-
-Sim-loopen kör alltid renderingen. Om simulatorn `tick:ar` beror på det inre läget (se nedan).
+Källfiler: `src/routes/Play.svelte`, `src/play/boot.js`, `src/play/Toolbox.svelte`, `src/play/BottomSheet.svelte`, `src/lab.js`, `src/simulator.js`.
 
 ---
 
-## 2. Hastighetsreglaget — global tidsskala
+## 1. Filosofi
 
-`src/play/boot.js:46-50`. Värdet `timeScale` multipliceras med `dt` i loopen:
+Spelet är **modlöst**. Det finns inget separat "redigeringsläge" att gå in och ut ur — du är alltid fri att markera, dra, skapa och justera. Simulatorn fortsätter rulla i bakgrunden hela tiden; den pausar bara när något skulle "fly" från ditt finger.
 
-```js
-const dt = Math.min((now - last) / 1000, 0.05) * timeScale;
-```
-
-- `timeScale = 0` → effektiv paus (sim-tick körs men `dt = 0`, inget rör sig).
-- `timeScale = 1` → normal hastighet.
-- `timeScale = 2` → dubbel hastighet.
-- Reglaget är synligt och fungerar i **både visnings- och redigeringsläge**.
+Den enda tillstånds-toggle som finns är **🔒 Lås** — som gömmer redigeringsverktygen för en ren visning (t.ex. när du ger telefonen till någon).
 
 ---
 
-## 3. Visningsläge (`isEditing = false`)
+## 2. HUD-element som alltid syns
 
-**Simulatorn**: kör (`sim.tick(dt)`).
-
-**Vad du kan göra**:
-- Panorera (en finger / vänsterklick + drag på tom yta).
-- Zooma (pinch eller scroll-hjul, `0.1x–4x`).
-- Trycka `Spara` / `Uppdatera` (kräver inloggning; för draft → prompt om titel och redirect till nytt id).
-- Trycka `✎ Redigera` för att gå in i redigeringsläget.
-
-**Vad du *inte* kan göra**:
-- Markera, flytta eller skapa kroppar. `lab.enabled = false` blockerar all hit-testing och placering — pointerdown går alltid till `startPan`.
-- Öppna inställningspanelen. Panelen har CSS-regeln `#panel:not(.available) { display: none }`, och `.available` sätts bara när `isEditing` är `true`.
-
----
-
-## 4. Redigeringsläge (`isEditing = true`)
-
-När du går in i redigering: `lab.enabled = true` och `mode` startar i `select`. Inställningspanelen blir tillgänglig (men öppnas inte automatiskt — toggle med `⚙`).
-
-Det finns **fyra** under-lägen i toolbaren (`src/lab.js:15`):
-
-| Läge | Knapp | Sim-tick? | Cursor |
-|---|---|---|---|
-| `select` | `Markera` | ✅ kör | `default` |
-| `addStar` | `+ Star` | ✅ kör | `crosshair` |
-| `addComet` | `+ Comet` | ✅ kör | `crosshair` |
-| `edit` | `Verktyg` | ⛔ **pausad** | `default` |
-
-Pausen kommer från `boot.js:57`: `if (!lab.isEditing()) sim.tick(dt);` där `lab.isEditing()` enbart är sant i läge `edit`. De övriga tre redigeringslägena låter alltså världen fortsätta röra sig medan du jobbar.
-
-### 4.1 `select` (Markera)
-
-- **Tap på kropp** → markerar den; högerpanelen visar objekt-inställningar.
-- **Drag på markerad kropp**:
-  - Om kroppen är **pinned** (stjärnor) → flyttas under draget.
-  - Om **inte pinned** (kometer) → flyttas *inte* (drag-villkoret kräver `pinned || mode === 'edit'`). Du kan markera en komet men inte flytta den i `select`-läget.
-- **Tap på tom yta** → avmarkerar och börjar pan.
-- **Pinch** → zoom.
-
-### 4.2 `addStar` (+ Star)
-
-- **Tap var som helst** → skapar en stjärna på den världs-koordinaten via `createStar`. Den nya kroppen markeras automatiskt och läget hoppar tillbaka till `select`.
-- Stjärnor är `pinned: true`, `attraction: 1`, `radius: 14`, `repelRadius: 10`, ingen trail.
-
-### 4.3 `addComet` (+ Comet)
-
-- **Pointerdown** → skapar en komet med hastighet `[0, 0]` på den punkten.
-- **Drag** → en röd förhandsvisnings-pil ritas från startpunkten till nuvarande pekarposition.
-- **Pointerup** → kometens hastighet sätts till `(start - end) * 2`. Dvs man "skjuter" kometen genom att dra åt motsatt håll.
-- Kometen markeras automatiskt; läget *byter inte* tillbaka till `select` (man kan placera flera i rad).
-- Kometer är `pinned: false`, `attraction: 0`, `radius: 6`, har trail.
-
-### 4.4 `edit` (Verktyg) — det enda pausade läget
-
-- Sim **pausar** så länge man är kvar i läget.
-- Alla kroppar får en streckad markeringsring och, om de inte är pinnade, en gul **velocity-pil** (skala `0.5`).
-- **Drag på kropp** → flyttar den (oavsett pinned/inte).
-- **Drag på pil-tipp** (träffradie 14 px) → ändrar hastighetsvektorn.
-- **Tap på tom yta** → avmarkerar och börjar pan.
-- När man lämnar läget (byter mode eller trycker `✓ Klar`) återupptas simuleringen.
-
----
-
-## 5. Inställningar i panelen (`⚙`)
-
-Panelen är bara öppningsbar i redigeringsläget. Den har två sektioner.
-
-### 5.1 Värld-sektionen — globala simulator-parametrar
-
-Renderas av `bootPlay` i `src/play/boot.js:13-29`:
-
-| Inställning | Range / val | Beskrivning |
+| Element | Position | Funktion |
 |---|---|---|
-| **Acceleration** | `0 – 3000`, steg `50` | Multiplicerar attraktionskraften. `0` = ingen kraft. |
-| **Max hastighet** | `0 – 3000`, steg `50` | Hastighetstak (clamp) per kropp. `0` = inget tak. |
-| **Attraktionsläge** | `nearest` / `all` / `weighted` / `normalized` / `normalized2` | Hur en kropp summerar krafter från attraktorer. Se `simulator.js:40-89`. |
+| `←` Tillbaka | uppe vänster | tillbaka till `/` |
+| `🔒` / `🔓` Lås | uppe vänster (efter ←) | växla mellan låst (visningsläge) och olåst (redigerbart) |
+| `Spara` / `Uppdatera` | uppe höger | spara världen (kräver inloggning) |
+| Hastighetsreglage | nedtill, centrerat | tidsskala `0x – 2x`, steg `0.05` |
 
-Värld-storleken (`width`/`height`) är **inte** redigerbar i UI; den sätts vid `defaultDraft()` (4000×4000) eller från det laddade datat.
+Hastighetsreglaget multiplicerar `dt` i sim-loopen. `0x` = mjuk paus, `1x` = normal, `2x` = dubbelt så fort. Funkar oavsett om något dras eller om låset är på.
 
-Ändringar i den här sektionen tillämpas direkt på samma `settings`-objekt som simulatorn läser i varje tick — alltså omedelbar effekt.
+---
 
-### 5.2 Objekt-sektionen — egenskaper för markerad kropp
+## 3. Två tillstånd: olåst (default) och låst
 
-Renderas av `lab.js:294-391`. Visas tomt (`Inget markerat`) tills något markeras. Tillgängliga fält beror på kroppstyp:
+| Tillstånd | `locked` | Toolbox synlig? | BottomSheet tillgänglig? | Markering / handles möjliga? |
+|---|---|---|---|---|
+| **Olåst** (default) | `false` | ✅ | ✅ | ✅ |
+| **Låst** | `true` | ⛔ | ⛔ | ⛔ (bara pan/zoom) |
 
-**Alltid:**
+I låst läge fungerar bara pan (drag) och zoom (pinch / mushjul). Bra för att visa en värld utan att råka pilla på något.
+
+---
+
+## 4. Olåst läge — tre interaktionssätt
+
+### 4.1 Toolbox (vänster sida) — skapa kroppar
+
+En tunn vertikal ikonrad med två symboler:
+
+- **✦ Stjärna** — `pinned`, `attraction: 1`, `radius: 14`, `repelRadius: 10`, ingen trail.
+- **☄ Komet** — `pinned: false`, `attraction: 0`, `radius: 6`, har trail.
+
+**Att placera ut**:
+
+1. Tryck och håll på ikonen.
+2. Drag ut över canvas — en spöke-symbol följer fingret.
+3. Släpp över canvas → kroppen skapas på den punkten och blir markerad.
+4. Släpp utanför canvas (eller på ikonraden) → avbryt, ingenting händer.
+
+Inga lägen att växla mellan. Du kan placera en stjärna, sedan en till, sedan en komet, helt utan att klicka på något annat.
+
+### 4.2 Markering + inline handles — finjustera kroppar
+
+**Tap på en kropp** → markerar den. Ringen runt den blir streckad-vit. BottomSheet snäpper automatiskt till `peek` (handtaget syns).
+
+**Tap på tom yta** → avmarkerar. Sheet stänger inte automatiskt.
+
+När en kropp är markerad ritas upp till tre **handles** på skärmen — runda prickar med ikon:
+
+| Handle | Position | Kant-villkor | Drag-effekt |
+|---|---|---|---|
+| **Radius** `↔` (vit) | öster om kroppen | alltid synlig | `radius = avstånd från centrum` (clamp 2–60) |
+| **Repel** `⇲` (rosa) | söder om kroppen | bara om `attraction != 0` | `repelRadius = avstånd från centrum` (clamp 0–500) |
+| **Velocity** `→` (blå) | vid pilens spets | bara om `!pinned` | `vel = (handle - pos) / 0.5` |
+
+Handles ligger alltid minst **36 px** från objektets centrum på *skärmen*, oavsett zoom — så att de aldrig krockar med små kometer. Hit-radien är **22 px**, generös för tumme.
+
+**Drag på själva kroppen** → flyttar den. För kometer nollställs hastigheten under draget (annars rycker det iväg när du släpper).
+
+### 4.3 BottomSheet — namnge, stila, världs-inställningar
+
+Halvtransparent panel nedtill med tre snap-punkter:
+
+| Snap | Höjd | Vad du ser |
+|---|---|---|
+| `closed` | 0 | inget — sheet är osynlig |
+| `peek` | ~80 px | bara handtaget + objektets namn (eller "Värld" om inget markerat) |
+| `full` | 65 % av viewport | all sektioner synliga |
+
+**Hur du växlar snap**:
+- **Drag handtaget** uppåt/nedåt — snäpper till närmaste punkt vid release.
+- **Tap på handtaget** — cyklar `closed → full → peek → closed`.
+- Markering av en kropp → automatisk `peek` (om sheet var stängd).
+- Lås-knappen → `closed`.
+
+**Innehåll**:
+
+#### Objekt-sektion (visas när något är markerat)
 
 | Inställning | Range / typ | Anteckning |
 |---|---|---|
-| **Namn** | text | |
-| **Färg** | color picker | Synkas till `trail.color` om trail finns. |
-| **Radie** | `2 – 60`, steg `1` | Visuell storlek + påverkar attraktorvikt (`sizeFactor` i `pull`). |
-| **Attraherar** | checkbox | Bakas i `attraction` som 0/1. Påverkar både kraft och om kroppen räknas som attractor. |
-| **Repel-radie** | `0 – 500`, steg `10` | Inom denna radie blir attraktionen *negativ* (kvadratiskt skalad). |
-| **Stil-preset** | `Klassisk` / `Glow` / `Neon` / `Eldkula` | Sätter glow + tail-parametrar i klump. |
-| **Glow** | `0 – 1`, steg `0.05` | |
-| **Ta bort** | knapp | Tar bort kroppen och avmarkerar. |
+| Namn | text | |
+| Färg | color picker | Synkas till `trail.color` om trail finns |
+| Radie | `2 – 60` | Visuellt + attraktorvikt. *(Också tillgänglig som handle)* |
+| Attraherar | checkbox | 0 eller 1 |
+| Repel-radie | `0 – 500` | *(Också tillgänglig som handle, om attractor)* |
+| Svansstil | `line` / `particles` | bara om trail |
+| Trail-längd | `0 – 5000` | bara om trail |
+| Stil-preset | `Klassisk` / `Glow` / `Neon` / `Eldkula` | sätter glow + tail-fält i klump |
+| Glow | `0 – 1` | |
+| Svans avsmalning | `0 – 1` | bara om trail |
+| Svans fade | `0 – 1` | bara om trail |
+| Fart-reaktion | `0 – 1` | bara om trail |
+| **Ta bort** | knapp | tar bort kroppen |
 
-**Endast om kroppen har trail (kometer):**
+#### Värld-sektion (alltid synlig i `full`)
 
-| Inställning | Range / typ |
+| Inställning | Range / val |
 |---|---|
-| **Svansstil** | `line` / `particles` |
-| **Trail-längd** | `0 – 5000`, steg `50` |
-| **Svans avsmalning** | `0 – 1`, steg `0.05` |
-| **Svans fade** | `0 – 1`, steg `0.05` |
-| **Fart-reaktion** | `0 – 1`, steg `0.05` |
+| Acceleration | `0 – 3000`, steg `50` |
+| Max hastighet | `0 – 3000`, steg `50` |
+| Attraktionsläge | `nearest` / `all` / `weighted` / `normalized` / `normalized2` |
 
-Alla fält uppdateras live på objektet (samma referens som simulator/renderer använder).
+Alla värden tillämpas direkt på samma `settings`-objekt som simulatorn läser varje tick — omedelbar effekt, ingen "tillämpa"-knapp.
+
+### 4.4 Pan & zoom (alltid)
+
+- **Drag på tom canvas** → pan.
+- **Pinch** (två fingrar) → zoom, `0.1x – 4x`.
+- **Mushjul** → zoom (desktop).
+
+Pan/zoom körs både i låst och olåst läge.
+
+---
+
+## 5. När pausar simulatorn?
+
+Simulatorn anropar `lab.isPaused()` varje frame innan `tick()`. Den returnerar `true` när:
+
+- En **handle** dras (`handle-radius`, `handle-repel`, `velocity`).
+- En **kropp** dras med move-gesten.
+
+Dvs. så fort du *släpper* fingret återupptas simuleringen automatiskt — du behöver inte trycka "play".
+
+| Situation | Sim-tick? |
+|---|---|
+| Inget händer (olåst) | ✅ kör |
+| Tap (utan drag) | ✅ kör |
+| Drag på handle / kropp | ⛔ pausad |
+| Drag på tom yta (pan) | ✅ kör |
+| Pinch (zoom) | ✅ kör |
+| Hastighet `0x` | ⛔ effektiv paus (`dt = 0`) |
+| Sheet öppen, sliders dras | ✅ kör (sliders pausar inte sim) |
+| Låst läge | ✅ kör |
+| Toolbox-drag pågår | ✅ kör |
+
+Det är ett medvetet val att slidedrag i sheet:en *inte* pausar — du ska kunna se effekten av t.ex. acceleration på en kropp som rör sig.
 
 ---
 
 ## 6. Spara — vad serialiseras?
 
-`src/world/serialize.js`. Vid `Spara`/`Uppdatera` skickas:
+`src/world/serialize.js`. Vid Spara/Uppdatera skickas:
 
 - `schema_version` (för närvarande `1`)
 - `world.width`, `world.height`
 - `settings.acceleration`, `settings.maxSpeed`, `settings.attractionMode`
-- En `bodies`-array med fälten i `BODY_FIELDS` + en serialiserad `trail` (utan punkthistorik).
+- En `bodies`-array med alla persistenta fält + serialiserad `trail` (utan punkthistorik).
 
 Trail-punkter och pekartillstånd serialiseras inte — de byggs upp på nytt vid `deserialize`.
 
-För `draft` (`/w/draft`): vid första sparet promptas titel, ett nytt level skapas via API, sessionStorage rensas och routern går till `/w/<nytt-id>`. För befintliga världar uppdateras posten in-place via `updateLevel`.
-
-Att vara inloggad krävs — annars erbjuds redirect till login-URL.
+För `draft` (`/w/draft`): vid första sparet promptas titel, ett nytt level skapas via API, sessionStorage rensas och routern går till `/w/<nytt-id>`. För befintliga världar uppdateras posten in-place via `updateLevel`. Inloggning krävs.
 
 ---
 
-## 7. Snabb sammanfattning av "är världen pausad?"
+## 7. Snabb-referens — var ändrar man vad?
 
-| Kontext | Sim-tick | Anledning |
-|---|---|---|
-| Visningsläge, valfri hastighet > 0 | ✅ rör på sig | `lab.isEditing() = false` |
-| Visningsläge, hastighet = 0 | ⛔ stilla | `dt * 0` |
-| Redigering: `select` / `addStar` / `addComet` | ✅ rör på sig | `mode !== 'edit'` |
-| Redigering: `edit` (Verktyg) | ⛔ pausad | `lab.isEditing() = true` |
-| Laddar / fel | ⛔ stilla | Ingen sim startad än |
-
-Med andra ord: det enda explicita "pausläget" i UI:t är **Verktyg** under redigering. Hastighetsreglaget kan dessutom användas som mjuk paus (`0x`) i alla lägen.
+| Vill ändra… | Var? |
+|---|---|
+| Storlek på en kropp | `↔`-handle eller Radie-slidern i sheet |
+| Repel-radien | `⇲`-handle eller Repel-slidern i sheet |
+| Hastighet på komet | `→`-handle eller drag på pilens spets |
+| Position | dra själva kroppen |
+| Namn / färg | sheet, objekt-sektion |
+| Stil (glow / svans) | sheet, objekt-sektion (eller preset-dropdown) |
+| Attraktion på/av | sheet, "Attraherar"-checkboxen |
+| Acceleration / max hastighet / attraktionsläge | sheet, värld-sektionen (`full` snap) |
+| Tidsskala (snabb-/slow-motion) | hastighetsreglaget nedtill |
+| Lägga till stjärna/komet | drag från ikon i Toolbox |
+| Ta bort kropp | sheet → "Ta bort"-knappen |
+| Gömma all UI | 🔒-knappen |

@@ -1,29 +1,18 @@
 import { createStar, createComet } from './bodies.js';
 
 const VEL_ARROW_SCALE = 0.5;
-const ARROW_TIP_HIT   = 14;
+const HANDLE_HIT_RADIUS = 22;
+const HANDLE_VISUAL_RADIUS = 8;
+const MIN_HANDLE_SCREEN_DIST = 36;
 
-const PRESETS = {
-    'Klassisk': { glow: 0,    tailTaper: 0,    tailFade: 0,    speedReactivity: 0   },
-    'Glow':     { glow: 0.6,  tailTaper: 0.7,  tailFade: 0.7,  speedReactivity: 0   },
-    'Neon':     { glow: 1.0,  tailTaper: 0.8,  tailFade: 0.5,  speedReactivity: 0.4 },
-    'Eldkula':  { glow: 0.8,  tailTaper: 0.9,  tailFade: 0.9,  speedReactivity: 1.0 },
-};
-
-export function createLab(canvas, simulator, renderer) {
+export function createLab(canvas, simulator, renderer, { onSelect } = {}) {
     let selected = null;
-    let mode = 'select'; // 'select' | 'addStar' | 'addComet' | 'edit'
     let dragState = null;
     let enabled = true;
-    const pointers = new Map(); // pointerId -> { sx, sy }
+    const pointers = new Map();
 
-    const panel = document.getElementById('body-panel');
-
-    function setMode(m) {
-        mode = m;
-        selected = null;
-        renderPanel();
-        canvas.style.cursor = m === 'select' || m === 'edit' ? 'default' : 'crosshair';
+    function notify() {
+        onSelect?.(selected);
     }
 
     function startPan(e) {
@@ -48,6 +37,49 @@ export function createLab(canvas, simulator, renderer) {
         };
     }
 
+    function handlesFor(body) {
+        if (!body) return [];
+        const cam = renderer.getCamera();
+        const [sx, sy] = renderer.worldToScreen(body.pos[0], body.pos[1]);
+        const out = [];
+
+        const rDist = Math.max(body.radius * cam.zoom, MIN_HANDLE_SCREEN_DIST);
+        out.push({ kind: 'radius', sx: sx + rDist, sy });
+
+        if (body.attraction) {
+            const repelDist = Math.max(body.repelRadius * cam.zoom, MIN_HANDLE_SCREEN_DIST);
+            out.push({ kind: 'repel', sx, sy: sy + repelDist });
+        }
+
+        if (!body.pinned) {
+            const [tx, ty] = renderer.worldToScreen(
+                body.pos[0] + body.vel[0] * VEL_ARROW_SCALE,
+                body.pos[1] + body.vel[1] * VEL_ARROW_SCALE,
+            );
+            out.push({ kind: 'velocity', sx: tx, sy: ty });
+        }
+
+        return out;
+    }
+
+    function handleAt(sx, sy) {
+        if (!selected) return null;
+        for (const h of handlesFor(selected)) {
+            if (Math.hypot(h.sx - sx, h.sy - sy) <= HANDLE_HIT_RADIUS) return h;
+        }
+        return null;
+    }
+
+    function bodyAt(wx, wy) {
+        for (let i = simulator.bodies.length - 1; i >= 0; i--) {
+            const b = simulator.bodies[i];
+            const dx = b.pos[0] - wx;
+            const dy = b.pos[1] - wy;
+            if (Math.sqrt(dx * dx + dy * dy) < Math.max(b.radius, 16)) return b;
+        }
+        return null;
+    }
+
     canvas.addEventListener('pointerdown', e => {
         pointers.set(e.pointerId, { sx: e.offsetX, sy: e.offsetY });
 
@@ -57,60 +89,31 @@ export function createLab(canvas, simulator, renderer) {
         }
 
         canvas.setPointerCapture(e.pointerId);
-        const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
 
         if (enabled) {
-            if (mode === 'addStar') {
-                const b = simulator.addBody(createStar([wx, wy]));
-                selected = b;
-                setMode('select');
-                renderPanel();
+            const h = handleAt(e.offsetX, e.offsetY);
+            if (h) {
+                if (h.kind === 'radius')   dragState = { type: 'handle-radius',   body: selected };
+                if (h.kind === 'repel')    dragState = { type: 'handle-repel',    body: selected };
+                if (h.kind === 'velocity') dragState = { type: 'velocity',        body: selected };
                 return;
             }
 
-            if (mode === 'addComet') {
-                dragState = { type: 'launch', wx, wy, body: null };
-                const b = simulator.addBody(createComet([wx, wy], [0, 0]));
-                dragState.body = b;
-                selected = b;
-                renderPanel();
-                return;
-            }
-
-            if (mode === 'edit') {
-                const tipHit = arrowTipAt(wx, wy);
-                if (tipHit) {
-                    selected = tipHit;
-                    dragState = { type: 'velocity', body: tipHit };
-                    renderPanel();
-                    return;
-                }
-                const hit = bodyAt(wx, wy);
-                if (hit) {
-                    selected = hit;
-                    dragState = { type: 'move', body: hit };
-                    renderPanel();
-                    return;
-                }
-                selected = null;
-                renderPanel();
-                startPan(e);
-                return;
-            }
-
-            // select mode
+            const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
             const hit = bodyAt(wx, wy);
             if (hit) {
                 selected = hit;
-                dragState = { type: 'move', body: hit, startWx: wx, startWy: wy, origPos: [...hit.pos] };
-                renderPanel();
+                dragState = { type: 'move', body: hit };
+                notify();
                 return;
             }
-            selected = null;
-            renderPanel();
+
+            if (selected) {
+                selected = null;
+                notify();
+            }
         }
 
-        // play mode (disabled), or empty click in select/edit → pan
         startPan(e);
     });
 
@@ -146,8 +149,9 @@ export function createLab(canvas, simulator, renderer) {
         if (!enabled) return;
         const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
 
-        if (dragState.type === 'move' && (dragState.body.pinned || mode === 'edit')) {
+        if (dragState.type === 'move') {
             dragState.body.pos = [wx, wy];
+            if (!dragState.body.pinned) dragState.body.vel = [0, 0];
         }
 
         if (dragState.type === 'velocity') {
@@ -157,9 +161,16 @@ export function createLab(canvas, simulator, renderer) {
             ];
         }
 
-        if (dragState.type === 'launch') {
-            dragState.currentWx = wx;
-            dragState.currentWy = wy;
+        if (dragState.type === 'handle-radius') {
+            const dx = wx - dragState.body.pos[0];
+            const dy = wy - dragState.body.pos[1];
+            dragState.body.radius = Math.max(2, Math.min(60, Math.round(Math.hypot(dx, dy))));
+        }
+
+        if (dragState.type === 'handle-repel') {
+            const dx = wx - dragState.body.pos[0];
+            const dy = wy - dragState.body.pos[1];
+            dragState.body.repelRadius = Math.max(0, Math.min(500, Math.round(Math.hypot(dx, dy) / 10) * 10));
         }
     });
 
@@ -173,11 +184,10 @@ export function createLab(canvas, simulator, renderer) {
 
         if (!dragState) return;
 
-        if (dragState.type === 'launch' && enabled) {
-            const [wx, wy] = renderer.screenToWorld(e.offsetX, e.offsetY);
-            const dx = dragState.wx - wx;
-            const dy = dragState.wy - wy;
-            dragState.body.vel = [dx * 2, dy * 2];
+        if (dragState.type?.startsWith('handle-')
+            || dragState.type === 'velocity'
+            || dragState.type === 'move') {
+            notify();
         }
 
         dragState = null;
@@ -193,29 +203,6 @@ export function createLab(canvas, simulator, renderer) {
         renderer.setCamera({ zoom });
     }, { passive: false });
 
-    function bodyAt(wx, wy) {
-        for (let i = simulator.bodies.length - 1; i >= 0; i--) {
-            const b = simulator.bodies[i];
-            const dx = b.pos[0] - wx;
-            const dy = b.pos[1] - wy;
-            if (Math.sqrt(dx * dx + dy * dy) < Math.max(b.radius, 16)) return b;
-        }
-        return null;
-    }
-
-    function arrowTipAt(wx, wy) {
-        for (let i = simulator.bodies.length - 1; i >= 0; i--) {
-            const b = simulator.bodies[i];
-            if (b.pinned) continue;
-            const tipX = b.pos[0] + b.vel[0] * VEL_ARROW_SCALE;
-            const tipY = b.pos[1] + b.vel[1] * VEL_ARROW_SCALE;
-            const dx = tipX - wx;
-            const dy = tipY - wy;
-            if (Math.sqrt(dx * dx + dy * dy) < ARROW_TIP_HIT) return b;
-        }
-        return null;
-    }
-
     function drawArrow(ctx, ax, ay, bx, by, color) {
         ctx.beginPath();
         ctx.moveTo(ax, ay);
@@ -223,41 +210,30 @@ export function createLab(canvas, simulator, renderer) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 2;
         ctx.stroke();
+    }
+
+    function drawHandle(ctx, sx, sy, color, icon) {
         ctx.beginPath();
-        ctx.arc(bx, by, 5, 0, Math.PI * 2);
-        ctx.fillStyle = color;
+        ctx.arc(sx, sy, HANDLE_VISUAL_RADIUS, 0, Math.PI * 2);
+        ctx.fillStyle = '#11111b';
         ctx.fill();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        if (icon) {
+            ctx.fillStyle = color;
+            ctx.font = 'bold 9px system-ui';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(icon, sx, sy + 0.5);
+        }
     }
 
     function drawOverlay(ctx) {
         if (!enabled) return;
+        if (!selected) return;
         const cam = renderer.getCamera();
 
-        if (mode === 'edit') {
-            for (const b of simulator.bodies) {
-                const [sx, sy] = renderer.worldToScreen(b.pos[0], b.pos[1]);
-                ctx.beginPath();
-                ctx.arc(sx, sy, (b.radius + 6) * cam.zoom, 0, Math.PI * 2);
-                ctx.strokeStyle = b === selected ? '#89b4fa' : '#cdd6f4';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([4, 4]);
-                ctx.stroke();
-                ctx.setLineDash([]);
-
-                if (!b.pinned) {
-                    const [tx, ty] = renderer.worldToScreen(
-                        b.pos[0] + b.vel[0] * VEL_ARROW_SCALE,
-                        b.pos[1] + b.vel[1] * VEL_ARROW_SCALE,
-                    );
-                    drawArrow(ctx, sx, sy, tx, ty, b === selected ? '#89b4fa' : '#f9e2af');
-                }
-            }
-            return;
-        }
-
-        if (!selected) return;
-
-        // highlight selected
         const [sx, sy] = renderer.worldToScreen(selected.pos[0], selected.pos[1]);
         ctx.beginPath();
         ctx.arc(sx, sy, (selected.radius + 6) * cam.zoom, 0, Math.PI * 2);
@@ -267,7 +243,6 @@ export function createLab(canvas, simulator, renderer) {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // repel radius
         if (selected.attraction && selected.repelRadius > 0) {
             ctx.beginPath();
             ctx.arc(sx, sy, selected.repelRadius * cam.zoom, 0, Math.PI * 2);
@@ -278,120 +253,31 @@ export function createLab(canvas, simulator, renderer) {
             ctx.setLineDash([]);
         }
 
-        // launch preview arrow
-        if (dragState?.type === 'launch' && dragState.currentWx !== undefined) {
-            const [ax, ay] = renderer.worldToScreen(dragState.wx, dragState.wy);
-            const [bx, by] = renderer.worldToScreen(dragState.currentWx, dragState.currentWy);
-            ctx.beginPath();
-            ctx.moveTo(ax, ay);
-            ctx.lineTo(bx, by);
-            ctx.strokeStyle = '#f38ba8';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+        if (!selected.pinned) {
+            const [tx, ty] = renderer.worldToScreen(
+                selected.pos[0] + selected.vel[0] * VEL_ARROW_SCALE,
+                selected.pos[1] + selected.vel[1] * VEL_ARROW_SCALE,
+            );
+            drawArrow(ctx, sx, sy, tx, ty, '#89b4fa');
+        }
+
+        for (const h of handlesFor(selected)) {
+            const color = h.kind === 'radius'   ? '#cdd6f4'
+                        : h.kind === 'repel'    ? '#f38ba8'
+                        : '#89b4fa';
+            const icon  = h.kind === 'radius' ? '↔'
+                        : h.kind === 'repel'  ? '⇲'
+                        : '→';
+            drawHandle(ctx, h.sx, h.sy, color, icon);
         }
     }
 
-    function renderPanel() {
-        if (!selected) {
-            panel.innerHTML = '<p class="empty">Inget markerat</p>';
-            return;
-        }
-        const b = selected;
-        panel.innerHTML = `
-            <label>Namn
-                <input type="text" data-prop="name" value="${b.name}" />
-            </label>
-            <label>Färg
-                <input type="color" data-prop="color" value="${b.color}" />
-            </label>
-            <label>Radie <span>${b.radius}</span>
-                <input type="range" data-prop="radius" min="2" max="60" step="1" value="${b.radius}" />
-            </label>
-            <label class="checkbox">
-                <input type="checkbox" data-prop="attraction" ${b.attraction ? 'checked' : ''} />
-                Attraherar
-            </label>
-            <label>Repel-radie <span>${b.repelRadius}</span>
-                <input type="range" data-prop="repelRadius" min="0" max="500" step="10" value="${b.repelRadius}" />
-            </label>
-            ${b.trail ? `
-            <label>Svansstil
-                <select data-prop="trail.style">
-                    <option value="line"      ${b.trail.style === 'line'      ? 'selected' : ''}>Linje</option>
-                    <option value="particles" ${b.trail.style === 'particles' ? 'selected' : ''}>Partiklar</option>
-                </select>
-            </label>
-            <label>Trail-längd <span>${b.trail.maxLength}</span>
-                <input type="range" data-prop="trail.maxLength" min="0" max="5000" step="50" value="${b.trail.maxLength}" />
-            </label>
-            ` : ''}
-            <hr />
-            <label>Stil
-                <select id="preset-select">
-                    <option value="">Egen…</option>
-                    ${Object.keys(PRESETS).map(k => `<option value="${k}">${k}</option>`).join('')}
-                </select>
-            </label>
-            <label>Glow <span>${b.glow.toFixed(2)}</span>
-                <input type="range" data-prop="glow" min="0" max="1" step="0.05" value="${b.glow}" />
-            </label>
-            ${b.trail ? `
-            <label>Svans avsmalning <span>${b.tailTaper.toFixed(2)}</span>
-                <input type="range" data-prop="tailTaper" min="0" max="1" step="0.05" value="${b.tailTaper}" />
-            </label>
-            <label>Svans fade <span>${b.tailFade.toFixed(2)}</span>
-                <input type="range" data-prop="tailFade" min="0" max="1" step="0.05" value="${b.tailFade}" />
-            </label>
-            <label>Fart-reaktion <span>${b.speedReactivity.toFixed(2)}</span>
-                <input type="range" data-prop="speedReactivity" min="0" max="1" step="0.05" value="${b.speedReactivity}" />
-            </label>
-            ` : ''}
-            <button id="delete-body">Ta bort</button>
-        `;
-
-        panel.querySelectorAll('input').forEach(input => {
-            input.addEventListener('input', () => {
-                const prop = input.dataset.prop;
-                const val = input.type === 'range'    ? parseFloat(input.value)
-                          : input.type === 'checkbox' ? (input.checked ? 1 : 0)
-                          : input.type === 'color'    ? input.value
-                          : input.value;
-                const path = prop.split('.');
-                let target = b;
-                for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
-                target[path[path.length - 1]] = val;
-                const span = input.previousElementSibling;
-                if (span?.tagName === 'SPAN') span.textContent = val;
-                if (prop === 'color' && b.trail) b.trail.color = val;
-            });
-        });
-
-        panel.querySelectorAll('select[data-prop]').forEach(sel => {
-            sel.addEventListener('change', () => {
-                const path = sel.dataset.prop.split('.');
-                let target = b;
-                for (let i = 0; i < path.length - 1; i++) target = target[path[i]];
-                target[path[path.length - 1]] = sel.value;
-            });
-        });
-
-        const presetSel = panel.querySelector('#preset-select');
-        presetSel?.addEventListener('change', () => {
-            const p = PRESETS[presetSel.value];
-            if (!p) return;
-            Object.assign(b, p);
-            renderPanel();
-        });
-
-        panel.querySelector('#delete-body')?.addEventListener('click', () => {
-            simulator.removeBody(b);
-            selected = null;
-            renderPanel();
-        });
-    }
-
-    function isEditing() {
-        return mode === 'edit';
+    function isPaused() {
+        if (!dragState) return false;
+        return dragState.type === 'move'
+            || dragState.type === 'velocity'
+            || dragState.type === 'handle-radius'
+            || dragState.type === 'handle-repel';
     }
 
     function setEnabled(v) {
@@ -399,9 +285,27 @@ export function createLab(canvas, simulator, renderer) {
         if (!enabled) {
             selected = null;
             dragState = null;
-            renderPanel();
+            notify();
         }
     }
 
-    return { drawOverlay, setMode, isEditing, setEnabled };
+    function removeBody(b) {
+        simulator.removeBody(b);
+        if (selected === b) {
+            selected = null;
+            notify();
+        }
+    }
+
+    function spawnAt(type, sx, sy) {
+        const [wx, wy] = renderer.screenToWorld(sx, sy);
+        const body = type === 'star'
+            ? simulator.addBody(createStar([wx, wy]))
+            : simulator.addBody(createComet([wx, wy], [0, 0]));
+        selected = body;
+        notify();
+        return body;
+    }
+
+    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt };
 }

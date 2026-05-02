@@ -5,21 +5,23 @@
     import { defaultDraft } from '../play/presets.js';
     import { serialize, deserialize } from '../world/serialize.js';
     import { getLevel, createLevel, updateLevel, whoami, loginUrl } from '../api.js';
+    import BottomSheet from '../play/BottomSheet.svelte';
+    import Toolbox from '../play/Toolbox.svelte';
 
     export let params = {};
 
     let canvas;
-    let worldPanel;
     let speedSlider;
     let speedValue;
-    let panelOpen = false;
-    let isEditing = false;
-    let mode = 'select';
     let lab;
     let sim;
     let world;
     let settings;
     let teardown;
+
+    let selectedBody = null;
+    let sheetSnap = 'closed';
+    let locked = false;
 
     let loadState = 'loading';
     let loadError = null;
@@ -37,13 +39,15 @@
                 title: raw.title || '',
                 description: raw.description || '',
             };
-            const boot = bootPlay({ canvas, worldPanel, speedSlider, speedValue, initial });
+            const boot = bootPlay({
+                canvas, speedSlider, speedValue, initial,
+                onSelect: (body) => { selectedBody = body; },
+            });
             lab = boot.lab;
             sim = boot.sim;
             world = boot.world;
             settings = boot.settings;
             teardown = boot.teardown;
-            lab.setEnabled(false);
             loadState = 'ok';
         } catch (e) {
             loadError = e.message;
@@ -64,16 +68,21 @@
         return { ...level.data, title: level.title, description: level.description };
     }
 
-    function toggleEdit() {
-        isEditing = !isEditing;
-        panelOpen = false;
-        lab?.setEnabled(isEditing);
-        if (!isEditing) selectMode('select');
+    function deleteBody(body) {
+        lab?.removeBody(body);
     }
 
-    function selectMode(m) {
-        mode = m;
-        lab?.setMode(m);
+    function spawnFromToolbox(type, sx, sy) {
+        lab?.spawnAt(type, sx, sy);
+    }
+
+    function toggleLock() {
+        locked = !locked;
+        lab?.setEnabled(!locked);
+        if (locked) {
+            sheetSnap = 'closed';
+            selectedBody = null;
+        }
     }
 
     async function onSave() {
@@ -112,7 +121,7 @@
     }
 </script>
 
-<div class="play" class:editing={isEditing}>
+<div class="play" class:locked>
     <canvas id="canvas" bind:this={canvas}></canvas>
 
     {#if loadState === 'loading'}
@@ -126,41 +135,31 @@
 
     <div class="hud-top">
         <a class="hud-btn back" href="#/" aria-label="Tillbaka">←</a>
-
-        {#if isEditing}
-            <div id="toolbar" class="modes">
-                <button class:active={mode === 'select'}   on:click={() => selectMode('select')}>Markera</button>
-                <button class:active={mode === 'addStar'}  on:click={() => selectMode('addStar')}>+ Star</button>
-                <button class:active={mode === 'addComet'} on:click={() => selectMode('addComet')}>+ Comet</button>
-                <button class:active={mode === 'edit'}     on:click={() => selectMode('edit')}>Verktyg</button>
-            </div>
-            <button class="hud-btn settings" on:click={() => panelOpen = !panelOpen} aria-label="Inställningar">⚙</button>
-        {:else}
-            <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
-                {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
-            </button>
-            <button class="hud-btn edit" on:click={toggleEdit} disabled={loadState !== 'ok'}>✎ Redigera</button>
-        {/if}
+        <button class="hud-btn lock" on:click={toggleLock} aria-label={locked ? 'Lås upp' : 'Lås'}>
+            {locked ? '🔓' : '🔒'}
+        </button>
+        <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
+            {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
+        </button>
     </div>
-
-    {#if isEditing}
-        <button class="hud-done" on:click={toggleEdit}>✓ Klar</button>
-    {/if}
 
     <div class="hud-speed">
         <input bind:this={speedSlider} type="range" min="0" max="2" step="0.05" value="1" />
         <span bind:this={speedValue}>1.00x</span>
     </div>
 
-    <aside id="panel" class:open={panelOpen} class:available={isEditing}>
-        <div class="panel-head">
-            <h3>Värld</h3>
-            <button class="panel-close" on:click={() => panelOpen = false} aria-label="Stäng">×</button>
-        </div>
-        <div id="world-panel" bind:this={worldPanel}></div>
-        <h3>Objekt</h3>
-        <div id="body-panel"><p class="empty">Inget markerat</p></div>
-    </aside>
+    {#if !locked && loadState === 'ok'}
+        <Toolbox {canvas} onSpawn={spawnFromToolbox} />
+    {/if}
+
+    {#if !locked && settings}
+        <BottomSheet
+            bind:settings
+            bind:selected={selectedBody}
+            bind:snap={sheetSnap}
+            onDelete={deleteBody}
+        />
+    {/if}
 </div>
 
 <style>
@@ -179,15 +178,14 @@
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
+        cursor: default;
+    }
+
+    .play.locked #canvas {
         cursor: grab;
     }
-
-    #canvas:active {
+    .play.locked #canvas:active {
         cursor: grabbing;
-    }
-
-    .play.editing #canvas {
-        cursor: default;
     }
 
     .overlay {
@@ -259,26 +257,6 @@
         margin-left: auto;
     }
 
-    .hud-top .hud-btn.settings {
-        margin-left: auto;
-    }
-
-    .hud-done {
-        position: absolute;
-        top: calc(60px + env(safe-area-inset-top));
-        right: 10px;
-        z-index: 6;
-        background: #89b4fa;
-        color: #11111b;
-        border: none;
-        border-radius: 999px;
-        height: 40px;
-        padding: 0 16px;
-        font-weight: 600;
-        font-size: 14px;
-        cursor: pointer;
-    }
-
     .hud-speed {
         position: absolute;
         bottom: calc(12px + env(safe-area-inset-bottom));
@@ -307,42 +285,5 @@
         min-width: 38px;
         text-align: right;
         font-variant-numeric: tabular-nums;
-    }
-
-    :global(.hud-top #toolbar.modes) {
-        display: flex;
-        gap: 4px;
-        background: rgba(17, 17, 27, 0.85);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        border: 1px solid #313244;
-        border-radius: 999px;
-        padding: 4px;
-        overflow-x: auto;
-        scrollbar-width: none;
-        flex-shrink: 1;
-        min-width: 0;
-    }
-    :global(.hud-top #toolbar.modes::-webkit-scrollbar) { display: none; }
-
-    :global(.hud-top #toolbar.modes button) {
-        background: transparent;
-        color: #9399b2;
-        border: none;
-        border-radius: 999px;
-        padding: 6px 12px;
-        font-size: 13px;
-        white-space: nowrap;
-        cursor: pointer;
-        min-height: 32px;
-    }
-    :global(.hud-top #toolbar.modes button:hover) { color: #cdd6f4; }
-    :global(.hud-top #toolbar.modes button.active) {
-        background: #313244;
-        color: #cdd6f4;
-    }
-
-    :global(#panel:not(.available)) {
-        display: none;
     }
 </style>
