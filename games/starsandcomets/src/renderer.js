@@ -179,6 +179,16 @@ export function createRenderer(canvas, world, settings) {
             if (b.pos[1] - r < minY) minY = b.pos[1] - r;
             if (b.pos[0] + r > maxX) maxX = b.pos[0] + r;
             if (b.pos[1] + r > maxY) maxY = b.pos[1] + r;
+            // Trails extend further than current pos — include them so swinging
+            // comets stay in frame after recentering.
+            const pts = b.trail?.points;
+            if (pts) {
+                for (let i = 0; i < pts.length; i += 2) {
+                    const x = pts[i], y = pts[i + 1];
+                    if (x < minX) minX = x; else if (x > maxX) maxX = x;
+                    if (y < minY) minY = y; else if (y > maxY) maxY = y;
+                }
+            }
         }
         const cx = (minX + maxX) / 2;
         const cy = (minY + maxY) / 2;
