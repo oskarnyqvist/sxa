@@ -3,7 +3,7 @@ import { createSimulator }     from '../simulator.js';
 import { createRenderer }      from '../renderer.js';
 import { createLab }           from '../lab.js';
 
-export function bootPlay({ canvas, speedSlider, speedValue, initial, onSelect }) {
+export function bootPlay({ canvas, initial, onSelect }) {
     const world    = createToroidalWorld({ width: initial.world.width, height: initial.world.height });
     const settings = { ...initial.settings };
     const sim      = createSimulator(world, settings);
@@ -14,12 +14,6 @@ export function bootPlay({ canvas, speedSlider, speedValue, initial, onSelect })
     ren.setCamera({ x: world.width / 2, y: world.height / 2, zoom: 1 });
 
     let timeScale = 1;
-    function onSpeed() {
-        timeScale = parseFloat(speedSlider.value);
-        speedValue.textContent = `${timeScale.toFixed(2)}x`;
-    }
-    speedSlider.addEventListener('input', onSpeed);
-
     let raf;
     let last = performance.now();
     function loop(now) {
@@ -32,10 +26,11 @@ export function bootPlay({ canvas, speedSlider, speedValue, initial, onSelect })
     }
     raf = requestAnimationFrame(loop);
 
-    const teardown = () => {
-        cancelAnimationFrame(raf);
-        speedSlider.removeEventListener('input', onSpeed);
-    };
+    function setTimeScale(n) { timeScale = n; }
 
-    return { teardown, lab, sim, ren, world, settings };
+    function teardown() {
+        cancelAnimationFrame(raf);
+    }
+
+    return { teardown, setTimeScale, lab, sim, ren, world, settings };
 }

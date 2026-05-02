@@ -1,27 +1,26 @@
 <script>
-    import { onMount, onDestroy } from 'svelte';
     import { replace } from 'svelte-spa-router';
-    import { bootPlay } from '../play/boot.js';
     import { defaultDraft } from '../play/presets.js';
     import { serialize, deserialize } from '../world/serialize.js';
     import { getLevel, createLevel, updateLevel, whoami, loginUrl } from '../api.js';
+    import PlayCanvas from '../play/PlayCanvas.svelte';
     import BottomSheet from '../play/BottomSheet.svelte';
     import Toolbox from '../play/Toolbox.svelte';
 
     export let params = {};
 
-    let canvas;
-    let speedSlider;
-    let speedValue;
-    let lab;
-    let sim;
-    let world;
-    let settings;
-    let teardown;
+    let canvasEl = null;
+    let lab = null;
+    let sim = null;
+    let world = null;
+    let settings = null;
+    let setTimeScale = () => {};
 
+    let initial = null;
     let selectedBody = null;
     let sheetSnap = 'closed';
     let locked = false;
+    let timeScale = 1;
 
     let loadState = 'loading';
     let loadError = null;
@@ -30,34 +29,21 @@
 
     $: isDraft = params.id === 'draft';
 
-    onMount(async () => {
+    (async () => {
         try {
             const raw = await loadRaw(params.id);
-            const initial = deserialize(raw);
             levelMeta = {
                 id: isDraft ? null : params.id,
                 title: raw.title || '',
                 description: raw.description || '',
             };
-            const boot = bootPlay({
-                canvas, speedSlider, speedValue, initial,
-                onSelect: (body) => { selectedBody = body; },
-            });
-            lab = boot.lab;
-            sim = boot.sim;
-            world = boot.world;
-            settings = boot.settings;
-            teardown = boot.teardown;
+            initial = deserialize(raw);
             loadState = 'ok';
         } catch (e) {
             loadError = e.message;
             loadState = 'error';
         }
-    });
-
-    onDestroy(() => {
-        teardown?.();
-    });
+    })();
 
     async function loadRaw(id) {
         if (id === 'draft') {
@@ -83,6 +69,11 @@
             sheetSnap = 'closed';
             selectedBody = null;
         }
+    }
+
+    function onSpeedInput(e) {
+        timeScale = parseFloat(e.target.value);
+        setTimeScale(timeScale);
     }
 
     async function onSave() {
@@ -122,7 +113,18 @@
 </script>
 
 <div class="play" class:locked>
-    <canvas id="canvas" bind:this={canvas}></canvas>
+    {#if initial}
+        <PlayCanvas
+            {initial}
+            onSelect={(body) => { selectedBody = body; }}
+            bind:canvasEl
+            bind:lab
+            bind:sim
+            bind:world
+            bind:settings
+            bind:setTimeScale
+        />
+    {/if}
 
     {#if loadState === 'loading'}
         <div class="overlay">Laddar…</div>
@@ -144,12 +146,12 @@
     </div>
 
     <div class="hud-speed">
-        <input bind:this={speedSlider} type="range" min="0" max="2" step="0.05" value="1" />
-        <span bind:this={speedValue}>1.00x</span>
+        <input type="range" min="0" max="2" step="0.05" value={timeScale} on:input={onSpeedInput} />
+        <span>{timeScale.toFixed(2)}x</span>
     </div>
 
-    {#if !locked && loadState === 'ok'}
-        <Toolbox {canvas} onSpawn={spawnFromToolbox} />
+    {#if !locked && canvasEl}
+        <Toolbox canvas={canvasEl} onSpawn={spawnFromToolbox} />
     {/if}
 
     {#if !locked && settings}
@@ -167,25 +169,6 @@
         position: relative;
         height: 100%;
         overflow: hidden;
-    }
-
-    #canvas {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        display: block;
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
-        cursor: default;
-    }
-
-    .play.locked #canvas {
-        cursor: grab;
-    }
-    .play.locked #canvas:active {
-        cursor: grabbing;
     }
 
     .overlay {
