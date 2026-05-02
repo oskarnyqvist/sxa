@@ -19,7 +19,7 @@
 
     let initial = null;
     let sheetSnap = 'closed';
-    let locked = false;
+    let mode = 'edit'; // 'view' | 'edit'
     let timeScale = 1;
 
     let loadState = 'loading';
@@ -62,10 +62,10 @@
         lab?.spawnAt(type, sx, sy);
     }
 
-    function toggleLock() {
-        locked = !locked;
-        lab?.setEnabled(!locked);
-        if (locked) {
+    function toggleMode() {
+        mode = mode === 'edit' ? 'view' : 'edit';
+        lab?.setEnabled(mode === 'edit');
+        if (mode === 'view') {
             sheetSnap = 'closed';
             selected.set(null);
         }
@@ -112,7 +112,7 @@
     }
 </script>
 
-<div class="play" class:locked>
+<div class="play" class:view={mode === 'view'} class:edit={mode === 'edit'}>
     {#if initial}
         <PlayCanvas
             {initial}
@@ -136,8 +136,8 @@
 
     <div class="hud-top">
         <a class="hud-btn back" href="#/" aria-label="Tillbaka">←</a>
-        <button class="hud-btn lock" on:click={toggleLock} aria-label={locked ? 'Lås upp' : 'Lås'}>
-            {locked ? '🔓' : '🔒'}
+        <button class="hud-btn mode" on:click={toggleMode}>
+            {mode === 'edit' ? 'Visa' : 'Redigera'}
         </button>
         <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
             {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
@@ -149,11 +149,11 @@
         <span>{timeScale.toFixed(2)}x</span>
     </div>
 
-    {#if !locked && canvasEl}
+    {#if mode === 'edit' && canvasEl}
         <Toolbox canvas={canvasEl} onSpawn={spawnFromToolbox} />
     {/if}
 
-    {#if !locked && settings}
+    {#if mode === 'edit' && settings}
         <BottomSheet
             bind:settings
             bind:snap={sheetSnap}
