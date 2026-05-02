@@ -27,6 +27,19 @@
     --comet:        var(--c-mediterranean);
     --cta:          var(--c-camel);
     --cta-text:     var(--c-graphite);
+
+    /* Typography */
+    --font-display: "Caprasimo", Georgia, serif;
+    --font-body:    "Figtree", system-ui, sans-serif;
+    --font-mono:    "Space Mono", ui-monospace, monospace;
+
+    /* Brutalism */
+    --br-border:    2px solid var(--c-albescent);
+    --br-border-dim:2px solid var(--border);
+    --br-shadow-warm:   5px 5px 0 var(--c-kofte);
+    --br-shadow-deep:   5px 5px 0 var(--c-mermaid);
+    --br-shadow-bloom:  5px 5px 0 var(--c-velvet);
+    --br-shadow-leaf:   5px 5px 0 var(--c-eucalyptus);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -40,9 +53,9 @@ body {
     height: 100%;
     background: transparent;
     color: var(--text);
-    font: 14px system-ui, sans-serif;
+    font: 15px/1.5 var(--font-body);
     overflow: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
-input, button, select { font: inherit; color: inherit; }
+input, button, select, textarea { font: inherit; color: inherit; }

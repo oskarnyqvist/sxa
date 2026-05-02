@@ -30,18 +30,32 @@
 
 <style>
     .page {
-        padding: 24px 16px 16px;
+        padding: 32px 16px 24px;
         max-width: 640px;
         margin: 0 auto;
     }
-    header { margin-bottom: 24px; }
-    h1 { font-size: 28px; font-weight: 600; color: var(--text); }
-    .sub { color: var(--text-dim); margin-top: 4px; }
+    header { margin-bottom: 32px; }
+    h1 {
+        font-family: var(--font-display);
+        font-size: 44px;
+        font-weight: 400;
+        line-height: 1.05;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+    .sub {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--c-camel);
+        margin-top: 8px;
+    }
     .presets {
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 14px;
     }
     .presets li {
         display: block;
@@ -51,21 +65,41 @@
         display: block;
         width: 100%;
         text-align: left;
-        padding: 16px;
+        padding: 18px;
         background: var(--surface-soft);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        border: var(--br-border);
         color: var(--text);
         font: inherit;
         cursor: pointer;
+        box-shadow: var(--br-shadow-bloom);
+        transition: transform 0.08s, box-shadow 0.08s;
     }
-    .presets button:hover { border-color: var(--cta); }
+    .presets button:active {
+        transform: translate(2px, 2px);
+        box-shadow: 3px 3px 0 var(--c-velvet);
+    }
     .presets li.disabled {
         color: var(--text-faint);
         cursor: not-allowed;
+        box-shadow: var(--br-shadow-deep);
+        opacity: 0.7;
     }
-    .title { display: block; font-weight: 600; font-size: 15px; }
-    .desc { display: block; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .title {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 22px;
+        line-height: 1.2;
+    }
+    .desc {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        color: var(--text-dim);
+        margin-top: 6px;
+        text-transform: uppercase;
+    }
 </style>

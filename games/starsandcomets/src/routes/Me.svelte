@@ -70,37 +70,57 @@
 
 <style>
     .page {
-        padding: 24px 16px 16px;
+        padding: 32px 16px 24px;
         max-width: 640px;
         margin: 0 auto;
     }
-    header { margin-bottom: 24px; }
-    h1 { font-size: 28px; font-weight: 600; color: var(--text); }
-    .sub { color: var(--text-dim); margin-top: 4px; }
+    header { margin-bottom: 32px; }
+    h1 {
+        font-family: var(--font-display);
+        font-size: 44px;
+        font-weight: 400;
+        line-height: 1.05;
+        color: var(--text);
+        letter-spacing: -0.01em;
+    }
+    .sub {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--c-camel);
+        margin-top: 8px;
+    }
     .empty {
         color: var(--text-faint);
         font-size: 13px;
         padding: 24px;
         text-align: center;
-        border: 1px dashed var(--border);
-        border-radius: 8px;
+        border: var(--br-border-dim);
+        border-style: dashed;
     }
     .cta {
         display: block;
-        margin-top: 16px;
+        margin-top: 20px;
         padding: 14px 16px;
         text-align: center;
         background: var(--cta);
         color: var(--cta-text);
-        font-weight: 600;
+        font-weight: 700;
         text-decoration: none;
-        border-radius: 8px;
+        border: 2px solid var(--c-graphite);
+        box-shadow: var(--br-shadow-warm);
+        transition: transform 0.08s, box-shadow 0.08s;
+    }
+    .cta:active {
+        transform: translate(2px, 2px);
+        box-shadow: 3px 3px 0 var(--c-kofte);
     }
     .levels {
         list-style: none;
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: 14px;
     }
     .levels li {
         display: flex;
@@ -108,9 +128,8 @@
         background: var(--surface-soft);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        overflow: hidden;
+        border: var(--br-border);
+        box-shadow: var(--br-shadow-deep);
     }
     .levels a {
         flex: 1;
@@ -118,16 +137,28 @@
         text-decoration: none;
         color: var(--text);
     }
-    .title { display: block; font-weight: 600; font-size: 15px; }
-    .desc { display: block; font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+    .title {
+        display: block;
+        font-family: var(--font-display);
+        font-weight: 400;
+        font-size: 20px;
+        line-height: 1.2;
+    }
+    .desc {
+        display: block;
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-top: 4px;
+    }
     .del {
         background: transparent;
         color: var(--text-dim);
         border: none;
-        border-left: 1px solid var(--border);
+        border-left: 2px solid var(--c-albescent);
         padding: 0 16px;
-        font-size: 18px;
+        font-size: 22px;
         cursor: pointer;
+        font-family: var(--font-mono);
     }
     .del:hover { color: var(--accent); }
 </style>
