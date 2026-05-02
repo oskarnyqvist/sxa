@@ -23,6 +23,9 @@ build/
 # Node
 node_modules/
 
+# Built site bundles synced to the server by tools/deploy-*
+infra/www/
+
 # OS
 .DS_Store
 Thumbs.db
