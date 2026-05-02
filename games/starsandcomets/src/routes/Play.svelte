@@ -5,7 +5,7 @@
     import { getLevel, createLevel, updateLevel, whoami, loginUrl } from '../api.js';
     import { selected } from '../stores/selection.js';
     import PlayCanvas from '../play/PlayCanvas.svelte';
-    import BottomSheet from '../play/BottomSheet.svelte';
+    import EditPanel from '../play/EditPanel.svelte';
     import Toolbox from '../play/Toolbox.svelte';
 
     export let params = {};
@@ -18,7 +18,6 @@
     let setTimeScale = () => {};
 
     let initial = null;
-    let sheetSnap = 'closed';
     let mode = 'edit'; // 'view' | 'edit'
     let timeScale = 1;
 
@@ -66,7 +65,6 @@
         mode = mode === 'edit' ? 'view' : 'edit';
         lab?.setEnabled(mode === 'edit');
         if (mode === 'view') {
-            sheetSnap = 'closed';
             selected.set(null);
         }
     }
@@ -113,16 +111,33 @@
 </script>
 
 <div class="play" class:view={mode === 'view'} class:edit={mode === 'edit'}>
-    {#if initial}
-        <PlayCanvas
-            {initial}
-            bind:canvasEl
-            bind:lab
-            bind:sim
-            bind:world
-            bind:settings
-            bind:setTimeScale
-        />
+    <div class="canvas-area">
+        {#if initial}
+            <PlayCanvas
+                {initial}
+                bind:canvasEl
+                bind:lab
+                bind:sim
+                bind:world
+                bind:settings
+                bind:setTimeScale
+            />
+        {/if}
+
+        {#if mode === 'edit' && canvasEl}
+            <Toolbox canvas={canvasEl} onSpawn={spawnFromToolbox} />
+        {/if}
+
+        <div class="hud-speed">
+            <input type="range" min="0" max="2" step="0.05" value={timeScale} on:input={onSpeedInput} />
+            <span>{timeScale.toFixed(2)}x</span>
+        </div>
+    </div>
+
+    {#if mode === 'edit' && settings}
+        <div class="panel-area">
+            <EditPanel {settings} onDelete={deleteBody} />
+        </div>
     {/if}
 
     {#if loadState === 'loading'}
@@ -143,30 +158,33 @@
             {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
         </button>
     </div>
-
-    <div class="hud-speed">
-        <input type="range" min="0" max="2" step="0.05" value={timeScale} on:input={onSpeedInput} />
-        <span>{timeScale.toFixed(2)}x</span>
-    </div>
-
-    {#if mode === 'edit' && canvasEl}
-        <Toolbox canvas={canvasEl} onSpawn={spawnFromToolbox} />
-    {/if}
-
-    {#if mode === 'edit' && settings}
-        <BottomSheet
-            bind:settings
-            bind:snap={sheetSnap}
-            onDelete={deleteBody}
-        />
-    {/if}
 </div>
 
 <style>
     .play {
         position: relative;
         height: 100%;
+        display: flex;
+        flex-direction: column;
         overflow: hidden;
+    }
+
+    .canvas-area {
+        position: relative;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
+
+    .play.edit .canvas-area {
+        flex: 0 0 var(--canvas-edit-height, 50dvh);
+    }
+
+    .panel-area {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        touch-action: pan-y;
+        background: var(--bg);
     }
 
     .overlay {
@@ -240,7 +258,7 @@
 
     .hud-speed {
         position: absolute;
-        bottom: calc(12px + env(safe-area-inset-bottom));
+        bottom: 12px;
         left: 50%;
         transform: translateX(-50%);
         background: var(--surface-glass);
