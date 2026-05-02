@@ -74,7 +74,7 @@ Vad som är gjort och vad som ligger kvar. Sorterat efter ordning vi tänker ta.
 
 1. **Stats-ringbuffer per body** — sim håller `maxSpeed`, `closestApproach`, `age`, `totalDistance`. Data only, ingen UI än. Sätter upp för #4.
 2. **Levande bakgrund-sim på meta-vyer** — `App.svelte` får en `BackgroundCanvas`-komponent som rullar en värld bakom `/`, `/new`, `/me`. Pausa när tab dold.
-3. **View / Edit-lägen + layer-modell** — stora refactorn. Bottensheet rivs, ersätts med sticky canvas + scrollande HTML-panel. Edit lyfter selected body ur simen.
+3. **View / Edit-lägen + layer-modell** — stora refactorn. Bottensheet rivs, ersätts med sticky canvas + scrollande HTML-panel. Edit lyfter selected body ur simen. **Plan:** [`PLAN_VIEW_EDIT.md`](./PLAN_VIEW_EDIT.md).
 4. **Mobile-first redesign meta-vyer** — kort med thumbnails, handritade ikoner, bättre nav.
 
 ### Polish (senare)
