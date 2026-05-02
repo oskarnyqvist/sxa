@@ -18,5 +18,7 @@
     .panel {
         padding: 16px 16px calc(24px + env(safe-area-inset-bottom));
         color: var(--text);
+        max-width: 960px;
+        margin: 0 auto;
     }
 </style>

@@ -83,6 +83,7 @@
     bind:this={cardEl}
     class="card"
     class:selected={isSelected}
+    class:expanded={isSelected}
     on:click={selectThis}
     on:keydown={onKeydown}
     role="button"
@@ -90,8 +91,10 @@
 >
     <header>
         <span class="dot" style="background: {body.color}"></span>
-        <input type="text" class="name" bind:value={body.name} on:input={poke} />
-        <button type="button" class="dice" on:click|stopPropagation={randomize} aria-label="Slumpa känsla">🎲</button>
+        <input type="text" class="name" bind:value={body.name} on:input={poke} on:click|stopPropagation />
+        {#if isSelected}
+            <button type="button" class="dice" on:click|stopPropagation={randomize} aria-label="Slumpa känsla">🎲</button>
+        {/if}
         {#if body.lifted}
             <span class="badge">Pausad</span>
         {:else}
@@ -99,32 +102,39 @@
         {/if}
     </header>
 
-    <div class="grid">
-        <label>
-            <span class="row"><span>Storlek</span><span class="val">{body.radius}</span></span>
-            <input type="range" min="2" max="60" step="1" bind:value={body.radius} on:input={poke} />
-        </label>
+    {#if !isSelected}
+        <div class="quick">
+            <span class="qstat">{Math.round(stats.maxSpeed)} <em>v</em></span>
+            <span class="qstat">{formatAge(stats.age)}</span>
+        </div>
+    {:else}
+        <div class="grid">
+            <label>
+                <span class="row"><span>Storlek</span><span class="val">{body.radius}</span></span>
+                <input type="range" min="2" max="60" step="1" bind:value={body.radius} on:input={poke} />
+            </label>
 
-        <label>
-            <span class="row"><span>Färg</span></span>
-            <input type="color" value={body.color} on:input={(e) => setColor(e.target.value)} />
-        </label>
+            <label>
+                <span class="row"><span>Färg</span></span>
+                <input type="color" value={body.color} on:input={(e) => setColor(e.target.value)} />
+            </label>
 
-        <label class="checkbox">
-            <input type="checkbox" checked={body.attraction !== 0}
-                on:change={(e) => { body.attraction = e.target.checked ? 1 : 0; poke(); }} />
-            <span>Attraherar</span>
-        </label>
-    </div>
+            <label class="checkbox">
+                <input type="checkbox" checked={body.attraction !== 0}
+                    on:change={(e) => { body.attraction = e.target.checked ? 1 : 0; poke(); }} />
+                <span>Attraherar</span>
+            </label>
+        </div>
 
-    <dl class="stats">
-        <dt>Hastighet</dt><dd>{Math.round(stats.maxSpeed)}</dd>
-        <dt>Närmsta</dt><dd>{formatLength(stats.closest)}</dd>
-        <dt>Ålder</dt><dd>{formatAge(stats.age)}</dd>
-        <dt>Sträcka</dt><dd>{formatLength(stats.distance)}</dd>
-    </dl>
+        <dl class="stats">
+            <dt>Hastighet</dt><dd>{Math.round(stats.maxSpeed)}</dd>
+            <dt>Närmsta</dt><dd>{formatLength(stats.closest)}</dd>
+            <dt>Ålder</dt><dd>{formatAge(stats.age)}</dd>
+            <dt>Sträcka</dt><dd>{formatLength(stats.distance)}</dd>
+        </dl>
 
-    <button type="button" class="danger" on:click|stopPropagation={() => onDelete(body)}>Ta bort</button>
+        <button type="button" class="danger" on:click|stopPropagation={() => onDelete(body)}>Ta bort</button>
+    {/if}
 </div>
 
 <style>
@@ -132,9 +142,10 @@
         background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 10px;
+        padding: 10px 12px;
+        cursor: pointer;
     }
+    .card.expanded { padding: 12px; cursor: default; }
     .card.selected {
         border-color: var(--cta);
         box-shadow: 0 0 0 1px var(--cta);
@@ -143,8 +154,18 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        margin-bottom: 10px;
     }
+    .card.expanded header { margin-bottom: 10px; }
+
+    .quick {
+        display: flex;
+        gap: 12px;
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--text-faint);
+        font-variant-numeric: tabular-nums;
+    }
+    .qstat em { font-style: normal; color: var(--text-dim); margin-left: 2px; }
     .dot {
         width: 12px;
         height: 12px;

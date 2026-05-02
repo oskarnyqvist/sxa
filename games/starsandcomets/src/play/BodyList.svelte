@@ -10,9 +10,11 @@
     {#if $bodies.length === 0}
         <p class="empty">Inga kroppar — lägg till en stjärna eller komet ovan.</p>
     {:else}
-        {#each $bodies as body (body.id)}
-            <BodyCard {body} {onDelete} />
-        {/each}
+        <div class="grid">
+            {#each $bodies as body (body.id)}
+                <BodyCard {body} {onDelete} />
+            {/each}
+        </div>
     {/if}
 </section>
 
@@ -24,6 +26,12 @@
         letter-spacing: 0.12em;
         color: var(--text-dim);
         margin-bottom: 10px;
+    }
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 10px;
+        align-items: start;
     }
     .empty {
         font-size: 13px;
