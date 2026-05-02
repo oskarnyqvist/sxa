@@ -1,9 +1,11 @@
+import { randomStarName, randomCometName } from './play/names.js';
+
 let nextId = 1;
 
 export function createStar(pos, overrides = {}) {
     return {
         id: nextId++,
-        name: `Star ${nextId - 1}`,
+        name: randomStarName(),
         pos: [...pos],
         vel: [0, 0],
         pinned: true,
@@ -22,7 +24,7 @@ export function createStar(pos, overrides = {}) {
 export function createComet(pos, vel = [0, 0], overrides = {}) {
     return {
         id: nextId++,
-        name: `Comet ${nextId - 1}`,
+        name: randomCometName(),
         pos: [...pos],
         vel: [...vel],
         pinned: false,

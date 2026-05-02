@@ -78,6 +78,11 @@
         setTimeScale(timeScale);
     }
 
+    function resetSpeed() {
+        timeScale = 1;
+        setTimeScale(1);
+    }
+
     async function onSave() {
         if (!sim) return;
         saveState = 'saving';
@@ -129,7 +134,15 @@
         {/if}
 
         <div class="hud-speed">
-            <input type="range" min="0" max="2" step="0.05" value={timeScale} on:input={onSpeedInput} />
+            <input type="range" min="0" max="2" step="0.05" value={timeScale}
+                list="speed-snaps"
+                on:input={onSpeedInput} on:dblclick={resetSpeed} />
+            <datalist id="speed-snaps">
+                <option value="0"></option>
+                <option value="0.5"></option>
+                <option value="1"></option>
+                <option value="2"></option>
+            </datalist>
             <span>{timeScale.toFixed(2)}x</span>
         </div>
     </div>
@@ -154,6 +167,7 @@
         <button class="hud-btn mode" on:click={toggleMode}>
             {mode === 'edit' ? 'Visa' : 'Redigera'}
         </button>
+        <button class="hud-btn fit" on:click={() => lab?.recenter()} aria-label="Centrera">⊕</button>
         <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
             {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
         </button>

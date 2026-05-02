@@ -2,6 +2,7 @@
     import { onMount, onDestroy } from 'svelte';
     import { selected as selectedStore } from '../stores/selection.js';
     import { recentMaxSpeed } from '../simulator.js';
+    import { randomBodyColor } from './colors.js';
 
     export let body;
     export let onDelete = () => {};
@@ -66,6 +67,16 @@
         if (body.trail) body.trail.color = value;
         poke();
     }
+
+    function randomize() {
+        setColor(randomBodyColor());
+        body.glow = Math.random();
+        if (body.trail) {
+            body.tailFade = 0.5 + Math.random() * 0.5;
+            body.tailTaper = 0.5 + Math.random() * 0.5;
+        }
+        poke();
+    }
 </script>
 
 <div
@@ -80,6 +91,7 @@
     <header>
         <span class="dot" style="background: {body.color}"></span>
         <input type="text" class="name" bind:value={body.name} on:input={poke} />
+        <button type="button" class="dice" on:click|stopPropagation={randomize} aria-label="Slumpa känsla">🎲</button>
         {#if body.lifted}
             <span class="badge">Pausad</span>
         {:else}
@@ -160,6 +172,16 @@
         letter-spacing: 0.1em;
         color: var(--text-faint);
     }
+    .dice {
+        background: transparent;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 2px 6px;
+        line-height: 1;
+    }
+    .dice:hover { color: var(--cta); }
     .badge {
         font-size: 10px;
         text-transform: uppercase;

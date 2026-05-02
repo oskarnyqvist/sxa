@@ -308,6 +308,11 @@ export function createLab(canvas, simulator, renderer) {
         return spawnAt(type, canvas.width / 2, canvas.height / 2);
     }
 
+    function recenter() {
+        if (simulator.bodies.length === 0) return;
+        renderer.fitTo(simulator.bodies, canvas.width, canvas.height, 1.3);
+    }
+
     function teardown() {
         liftedStore.set(null); // clear flag on any held body before tearing down
         unsubSelected();
@@ -315,5 +320,5 @@ export function createLab(canvas, simulator, renderer) {
         bodiesStore.set([]);
     }
 
-    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt, spawnAtCenter, teardown };
+    return { drawOverlay, isPaused, setEnabled, removeBody, spawnAt, spawnAtCenter, recenter, teardown };
 }
