@@ -6,6 +6,7 @@
     import { selected, lifted } from '../stores/selection.js';
     import PlayCanvas from '../play/PlayCanvas.svelte';
     import EditPanel from '../play/EditPanel.svelte';
+    import SpawnPalette from '../play/SpawnPalette.svelte';
 
     export let params = {};
 
@@ -120,6 +121,13 @@
 </script>
 
 <div class="play" class:view={mode === 'view'} class:edit={mode === 'edit'}>
+    {#if mode === 'edit'}
+        <header class="topbar">
+            <a class="topbar-back" href="#/" aria-label="Tillbaka">←</a>
+            <div class="topbar-title">{levelMeta.title || 'Ny värld'}</div>
+        </header>
+    {/if}
+
     <div class="canvas-area">
         {#if initial}
             <PlayCanvas
@@ -133,22 +141,63 @@
             />
         {/if}
 
-        <div class="hud-speed">
-            <input type="range" min="0" max="2" step="0.05" value={timeScale}
-                list="speed-snaps"
-                on:input={onSpeedInput} on:dblclick={resetSpeed} />
-            <datalist id="speed-snaps">
-                <option value="0"></option>
-                <option value="0.5"></option>
-                <option value="1"></option>
-                <option value="2"></option>
-            </datalist>
-            <span>{timeScale.toFixed(2)}x</span>
-        </div>
+        {#if mode === 'edit' && lab}
+            <SpawnPalette {lab} {canvasEl} />
+        {/if}
+
+        {#if mode === 'view'}
+            <div class="hud-speed">
+                <input type="range" min="0" max="2" step="0.05" value={timeScale}
+                    list="speed-snaps"
+                    on:input={onSpeedInput} on:dblclick={resetSpeed} />
+                <datalist id="speed-snaps">
+                    <option value="0"></option>
+                    <option value="0.5"></option>
+                    <option value="1"></option>
+                    <option value="2"></option>
+                </datalist>
+                <span>{timeScale.toFixed(2)}x</span>
+            </div>
+        {/if}
+
+        <button class="hud-btn mode" on:click={toggleMode} aria-label={mode === 'edit' ? 'Visa' : 'Redigera'}>
+            {#if mode === 'edit'}
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="4 9 4 4 9 4"/>
+                    <polyline points="20 9 20 4 15 4"/>
+                    <polyline points="4 15 4 20 9 20"/>
+                    <polyline points="20 15 20 20 15 20"/>
+                </svg>
+            {:else}
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="9 4 9 9 4 9"/>
+                    <polyline points="15 4 15 9 20 9"/>
+                    <polyline points="9 20 9 15 4 15"/>
+                    <polyline points="15 20 15 15 20 15"/>
+                </svg>
+            {/if}
+        </button>
     </div>
 
     {#if mode === 'edit' && settings}
         <div class="panel-area">
+            <div class="panel-toolbar">
+                <div class="panel-speed">
+                    <input type="range" min="0" max="2" step="0.05" value={timeScale}
+                        list="speed-snaps"
+                        on:input={onSpeedInput} on:dblclick={resetSpeed} />
+                    <datalist id="speed-snaps">
+                        <option value="0"></option>
+                        <option value="0.5"></option>
+                        <option value="1"></option>
+                        <option value="2"></option>
+                    </datalist>
+                    <span>{timeScale.toFixed(2)}x</span>
+                </div>
+                <button class="panel-save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
+                    {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
+                </button>
+            </div>
             <EditPanel bind:settings onSpawn={spawn} onDelete={deleteBody} />
         </div>
     {/if}
@@ -163,14 +212,15 @@
     {/if}
 
     <div class="hud-top">
-        <a class="hud-btn back" href="#/" aria-label="Tillbaka">←</a>
-        <button class="hud-btn mode" on:click={toggleMode}>
-            {mode === 'edit' ? 'Visa' : 'Redigera'}
-        </button>
+        {#if mode === 'view'}
+            <a class="hud-btn back" href="#/" aria-label="Tillbaka">←</a>
+        {/if}
         <button class="hud-btn fit" on:click={() => lab?.recenter()} aria-label="Centrera">⊕</button>
-        <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
-            {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
-        </button>
+        {#if mode === 'view'}
+            <button class="hud-btn save" on:click={onSave} disabled={saveState === 'saving' || loadState !== 'ok'}>
+                {#if saveState === 'saving'}Sparar…{:else if saveState === 'saved'}✓ Sparat{:else}{isDraft ? 'Spara' : 'Uppdatera'}{/if}
+            </button>
+        {/if}
     </div>
 </div>
 
@@ -181,6 +231,41 @@
         display: flex;
         flex-direction: column;
         overflow: hidden;
+    }
+
+    .topbar {
+        flex: 0 0 auto;
+        height: 44px;
+        padding: 0 12px;
+        padding-top: env(safe-area-inset-top);
+        display: grid;
+        grid-template-columns: 40px 1fr 40px;
+        align-items: center;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .topbar-back {
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text);
+        text-decoration: none;
+        font-size: 20px;
+        border-radius: 999px;
+    }
+    .topbar-back:hover { background: var(--surface); }
+
+    .topbar-title {
+        text-align: center;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .canvas-area {
@@ -200,6 +285,52 @@
         touch-action: pan-y;
         background: var(--bg);
     }
+
+    .panel-toolbar {
+        position: sticky;
+        top: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 16px;
+        background: var(--bg);
+        border-bottom: 1px solid var(--border);
+    }
+
+    .panel-speed {
+        flex: 1 1 auto;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .panel-speed input[type="range"] {
+        flex: 1 1 auto;
+        accent-color: var(--cta);
+    }
+
+    .panel-speed span {
+        color: var(--cta);
+        font-size: 12px;
+        min-width: 38px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .panel-save {
+        flex: 0 0 auto;
+        padding: 8px 16px;
+        height: 36px;
+        background: var(--cta);
+        color: var(--bg);
+        border: none;
+        border-radius: 999px;
+        font: inherit;
+        font-weight: 500;
+        cursor: pointer;
+    }
+    .panel-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .overlay {
         position: absolute;
@@ -261,9 +392,30 @@
         cursor: not-allowed;
     }
 
-    :global(.hud-top .hud-btn.back) {
+    :global(.hud-top .hud-btn.back),
+    :global(.hud-top .hud-btn.fit) {
         font-size: 20px;
         padding: 0;
+    }
+
+    .canvas-area > .hud-btn.mode {
+        position: absolute;
+        right: 12px;
+        bottom: 12px;
+        z-index: 5;
+        background: var(--surface-glass);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        height: 40px;
+        width: 40px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
     }
 
     .hud-top .hud-btn.save {

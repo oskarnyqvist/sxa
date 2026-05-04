@@ -34,7 +34,7 @@
     });
 </script>
 
-<canvas bind:this={canvas}></canvas>
+<canvas bind:this={canvas} on:contextmenu|preventDefault></canvas>
 
 <style>
     canvas {
@@ -46,6 +46,7 @@
         touch-action: none;
         user-select: none;
         -webkit-user-select: none;
+        -webkit-touch-callout: none;
         cursor: default;
     }
 </style>

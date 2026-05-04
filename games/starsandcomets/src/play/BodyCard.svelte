@@ -110,11 +110,6 @@
     {:else}
         <div class="grid">
             <label>
-                <span class="row"><span>Storlek</span><span class="val">{body.radius}</span></span>
-                <input type="range" min="2" max="60" step="1" bind:value={body.radius} on:input={poke} />
-            </label>
-
-            <label>
                 <span class="row"><span>Färg</span></span>
                 <input type="color" value={body.color} on:input={(e) => setColor(e.target.value)} />
             </label>
@@ -226,14 +221,12 @@
         justify-content: space-between;
         margin-bottom: 4px;
     }
-    .val { color: var(--cta); font-variant-numeric: tabular-nums; }
     label.checkbox {
         display: flex;
         align-items: center;
         gap: 8px;
         cursor: pointer;
     }
-    input[type="range"] { width: 100%; accent-color: var(--cta); }
     input[type="color"] {
         width: 100%;
         height: 32px;
