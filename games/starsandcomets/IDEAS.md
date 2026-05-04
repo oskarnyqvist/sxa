@@ -9,6 +9,10 @@ Lös samling av idéer att plocka från senare. Inte prioriterade.
 - Tematiska namnpooler (mytologi, växter, latin, sci-fi) — utöka `play/names.js`.
 - "Laga"-knapp för system i dåligt läge — om kometerna studsar eller ligger fult, försök starta om dem med bättre startvektorer så banorna blir snyggare.
 - Se över fysiken kring stora stjärnor — kometer fastnar lätt i dem; rör de sig för långsamt nära tunga kroppar? Justera så närpassager känns mer dynamiska. (Delvis adresserat av perpendicular-kicken, men kan finjusteras.)
+- Flytta ner tidsväljaren till en mindre dominant plats — t.ex. bakom en knapp eller in i settings. Den behöver inte vara framträdande hela tiden.
+- Rösta / favoritmarkera andras världar — kräver att man kan se andras världar publikt och en relation user→level för like/favorit.
+- Topplista över mest gillade/spelade världar — kräver datamodell för aggregerad statistik (votes, views, plays) och en publik feed-route.
+- Se över lägena (edit / view) och tydliggör reset / revert / spara — gärna gömt bakom en knapp eller meny istället för att ligga öppet i UI:t hela tiden.
 
 ## Sim-kontroll
 
