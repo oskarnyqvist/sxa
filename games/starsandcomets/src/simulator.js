@@ -63,21 +63,14 @@ export function createSimulator(world, settings) {
         const force = new Map();
         for (const m of movable) force.set(m, [0, 0]);
 
-        // applyPair: forward force on body, plus Newton-3 reaction on movable attractor.
-        // Reaction is skipped when body is itself an attractor — that case is already
-        // covered when we iterate the *other* body, so adding reaction here would
-        // double-count the pair.
+        // applyPair: forward force on body. Asymmetric model — passive bodies
+        // (attraction === 0) don't push back on their attractors, only other
+        // attractors do (handled implicitly when we iterate that other body).
         function applyPair(body, attractor, dist, weight) {
             const [fx, fy] = pull(body, attractor, dist, weight);
             const bf = force.get(body);
             bf[0] += fx;
             bf[1] += fy;
-            if (!attractor.pinned && body.attraction === 0) {
-                const af = force.get(attractor);
-                const ratio = body.radius / attractor.radius;
-                af[0] -= fx * ratio;
-                af[1] -= fy * ratio;
-            }
         }
 
         for (const body of movable) {

@@ -79,7 +79,7 @@ Pull-kraften per (body, attractor)-par:
 - **Sizefactor:** `attractor.radius / maxAttractorRadius` — större attraktor drar starkare. Radius är alltså mass-proxy.
 - **Repel:** när `dist < radius * 1.5` byter kraften tecken med `(repelRadius/dist)²`. Singularitetsskydd. Inte exponerat i UI.
 - **Perpendicular kick:** vid head-on-approach inom repel-zonen läggs en sidledes kraft till. Magnitud `0.5 * |accel| * |cos(vel, dir)|`. Riktning från `body.id & 1`. Bryter symmetri utan att tappa replay-determinism.
-- **Reaction (Newton 3):** när en *rörlig* attraktor drar i en kropp som inte själv attraherar, får attraktorn en motsvarande motkraft viktad med `body.radius / attractor.radius`. Pinned attraktorer (stjärnor) ignorerar reaktion = oändlig massa.
+- **Asymmetrisk reaktion:** kroppar som inte själva attraherar (kometer med `attraction = 0`) påverkar inte sina attraktorer alls. En attraktor känner bara krafter från *andra* attraktorer (vilket sker naturligt när vi itererar den andra kroppens pulls). Konsekvens: en lös flytande stjärna ligger stilla även med kometer runt sig.
 
 `settings.attractionMode` styr hur en kropp viktar flera attractorer (`nearest`, `weighted`, `normalized`, `normalized2`, `all`). Default är `nearest`. Inte exponerat i UI just nu.
 
